@@ -1,12 +1,36 @@
 ﻿using ChessChallenge.API;
 using System;
 using System.Linq;
-
+using static ChessChallenge.Example.EvilBot;
 
 public class MyBot : IChessBot
 {
 
+    /*public struct Transposition
+    {
+        public ulong key;
+        public int value;
+        public Move bmove;
+        public byte depth;
+        public byte nodeType;
+        *//*0 -> Exact
+        1 -> Alpha
+        2 -> Beta*/
+
+    /*     public Transposition(ulong key, int value, Move bmove, byte depth, byte nodeType)
+         {
+             this.key = key;
+             this.value = value;
+             this.depth = depth;
+             this.nodeType = nodeType;
+             this.bmove = bmove;
+         }*//*
+}*/
+
     int[] pieceValues = { 0, 100, 320, 330, 500, 900, 20000 };
+
+    // Transposition[] transpoTable;
+
 
 
     int[,] tables = {{0,  0,  0,  0,
@@ -63,24 +87,55 @@ public class MyBot : IChessBot
                          20, 30, 10,  0} };
 
     Move bestMove;
-    Move secondBestMove;
+    //Move secondBestMove;
     bool hasNotFinished;
-    int maxTime = 200;
+    int maxTime = 500;
     int posNB;
     Move finalMove;
-    Move secondFinalMove;
+    //Move secondFinalMove;
+
+    // int transpoNB;
 
 
-    /*public void SetTransposition(ulong key, int value, Move bmove, byte depth, byte nodeType)
+    /* public void SetTransposition(ulong key, int value, Move bmove, byte depth, byte nodeType)
+     {
+         int index = (int)(key % 10000);
+         transpoTable[index].key = key;
+         transpoTable[index].value = value;
+         transpoTable[index].depth = depth;
+         transpoTable[index].nodeType = nodeType;
+         transpoTable[index].bmove = bmove;
+     }
+
+     public float TranspositionLookUp(ulong key, byte depth, float alpha, float beta)
+     {
+         Transposition t = transpoTable[key % 10000];
+         if (t.key == key)
+         {
+             if (t.depth >= depth)
+             {
+                 if (t.nodeType == 0)
+                 {
+                     return t.value;
+                 }
+                 if (t.nodeType == 1 && t.value <= alpha)
+                 {
+                     return alpha;
+                 }
+                 if (t.nodeType == 2 && t.value >= beta)
+                 {
+                     return beta;
+                 }
+             }
+         }
+         return float.NegativeInfinity;
+     }*/
+
+  /*  public MyBot()
     {
-        int index = (int)(key % (ulong)tableSize);
-        table[index] = Transposition(key, value, bmove, depth, nodeType);
+        transpoTable = new Transposition[10000];
+        //transpoNB = 0;
     }*/
-
-    //public Transposition GetTransposition()
-    //{
-
-    //}
 
 
     public Move Think(Board board, Timer timer)
@@ -92,12 +147,12 @@ public class MyBot : IChessBot
 
         int finalDepth = 0;
 
-        ///Console.WriteLine("*------*");
+        //Console.WriteLine("*------*");
 
-        for (int i = 1; i <= 50; i++)
+        for (int i = 1; i <= 99; i++)
         {
             hasNotFinished = false;
-            //posNB = 0;
+            posNB = 0;
             float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, false, timer);
 
             if (!hasNotFinished)
@@ -105,7 +160,7 @@ public class MyBot : IChessBot
                 Console.WriteLine(posNB);
                 lastEval = eval;
                 finalMove = bestMove;
-                secondFinalMove = secondBestMove;
+                //secondFinalMove = secondBestMove;
                 finalDepth += 1;
             }
             else
@@ -121,22 +176,29 @@ public class MyBot : IChessBot
 
         //Console.WriteLine("*------*");
 
-        board.MakeMove(finalMove);
+        /*board.MakeMove(finalMove);
         if (board.IsDraw() && lastEval > -50 && !secondFinalMove.Equals(Move.NullMove))
         {
             board.UndoMove(finalMove);
             return secondFinalMove;
         }
-        board.UndoMove(finalMove);
+        board.UndoMove(finalMove);*/
 
         return finalMove;
     }
 
     public float Search(Board board, float alpha, float beta, int depth, int startingDepth, bool isQuiet, Timer timer)
     {
-
+        // byte nodeType = 1;
         if (!isQuiet)
         {
+            /*float lookUpValue = TranspositionLookUp(board.ZobristKey, (byte)depth, alpha, beta);
+             if (lookUpValue > float.NegativeInfinity)
+             {
+                 //transpoNB += 1;
+                 return lookUpValue;
+             }*/
+
             if (depth == 0)
             {
                 posNB += 1;
@@ -187,22 +249,27 @@ public class MyBot : IChessBot
 
 
         Move currentBestMove = Move.NullMove;
-        Move secondCurrentBestMove = Move.NullMove;
+        //Move secondCurrentBestMove = Move.NullMove;
 
         foreach (var move in moves)
         {
             board.MakeMove(move);
-            float eval = -Search(board, -beta, -alpha, depth - 1, startingDepth, isQuiet, timer);
+            int extension = board.IsInCheck() ? 1 : 0;
+            float eval = -Search(board, -beta, -alpha, depth - 1 + extension, startingDepth + extension, isQuiet, timer);
             board.UndoMove(move);
 
             if (eval >= beta)
             {
+                /*if (!isQuiet)
+                {
+                    SetTransposition(board.ZobristKey, (int)beta, move, (byte)depth, 2);
+                }*/
                 return beta;
             }
             if (eval > alpha)
             {
                 alpha = eval;
-                secondCurrentBestMove = currentBestMove;
+                //secondCurrentBestMove = currentBestMove;
                 currentBestMove = move;
             }
         }
@@ -210,10 +277,10 @@ public class MyBot : IChessBot
         if (!isQuiet && depth == startingDepth)
         {
             bestMove = currentBestMove;
-            secondBestMove = secondCurrentBestMove;
+            //secondBestMove = secondCurrentBestMove;
         }
 
-
+        // SetTransposition(board.ZobristKey, (int)beta, currentBestMove, (byte)depth, nodeType);
         return alpha;
 
     }
