@@ -66,7 +66,7 @@ public class MyBot : IChessBot
     Move secondBestMove;
     bool hasNotFinished;
     int maxTime = 200;
-    //int posNB;
+    int posNB;
     Move finalMove;
     Move secondFinalMove;
 
@@ -102,7 +102,7 @@ public class MyBot : IChessBot
 
             if (!hasNotFinished)
             {
-                //Console.WriteLine(posNB);
+                Console.WriteLine(posNB);
                 lastEval = eval;
                 finalMove = bestMove;
                 secondFinalMove = secondBestMove;
@@ -139,7 +139,7 @@ public class MyBot : IChessBot
         {
             if (depth == 0)
             {
-                //posNB += 1;
+                posNB += 1;
                 return Search(board, alpha, beta, depth, startingDepth, true, timer);
             }
 
@@ -172,17 +172,14 @@ public class MyBot : IChessBot
 
         if (!isQuiet)
         {
-
-
-            float[] scores = moves.Select(move => ((move.Equals(finalMove) ? 9999f : 0f) + (move.IsPromotion ? pieceValues[(int)move.PromotionPieceType] : 0f) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0))).ToArray();
-
-            Move[] movesCopy = new Move[moves.Length];
-
-            Array.Copy(moves, movesCopy, moves.Length);
+            float score(Move move)
+            {
+                return (move.Equals(finalMove) ? 9999f : 0f) + (move.IsPromotion ? pieceValues[(int)move.PromotionPieceType] : 0f) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
+            }
 
             int comp(Move move1, Move move2)
             {
-                return scores[Array.IndexOf(movesCopy, move1)].CompareTo(scores[Array.IndexOf(movesCopy, move2)]);
+                return score(move1).CompareTo(score(move2));
             }
 
             Array.Sort(moves, comp);
