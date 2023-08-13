@@ -1,6 +1,5 @@
 ﻿using ChessChallenge.API;
 using System;
-using System.Diagnostics;
 using System.Linq;
 
 
@@ -71,7 +70,6 @@ public class MyBot : IChessBot
     Move finalMove;
     Move secondFinalMove;
 
-    Stopwatch stopwatch = new Stopwatch();
 
     /*public void SetTransposition(ulong key, int value, Move bmove, byte depth, byte nodeType)
     {
@@ -90,8 +88,6 @@ public class MyBot : IChessBot
 
         //Console.WriteLine(Eval(Board.CreateBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")));
 
-        stopwatch.Restart();
-
         float lastEval = 0;
 
         int finalDepth = 0;
@@ -102,7 +98,7 @@ public class MyBot : IChessBot
         {
             hasNotFinished = false;
             //posNB = 0;
-            float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, false);
+            float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, false, timer);
 
             if (!hasNotFinished)
             {
@@ -136,7 +132,7 @@ public class MyBot : IChessBot
         return finalMove;
     }
 
-    public float Search(Board board, float alpha, float beta, int depth, int startingDepth, bool isQuiet)
+    public float Search(Board board, float alpha, float beta, int depth, int startingDepth, bool isQuiet, Timer timer)
     {
 
         if (!isQuiet)
@@ -144,7 +140,7 @@ public class MyBot : IChessBot
             if (depth == 0)
             {
                 //posNB += 1;
-                return Search(board, alpha, beta, depth, startingDepth, true);
+                return Search(board, alpha, beta, depth, startingDepth, true, timer);
             }
 
             if (board.IsInCheckmate())
@@ -152,7 +148,7 @@ public class MyBot : IChessBot
                 return -20000;
             }
 
-            if (stopwatch.Elapsed.TotalMilliseconds > maxTime)
+            if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 hasNotFinished = true;
                 return 0;
@@ -199,7 +195,7 @@ public class MyBot : IChessBot
         foreach (var move in moves)
         {
             board.MakeMove(move);
-            float eval = -Search(board, -beta, -alpha, depth - 1, startingDepth, isQuiet);
+            float eval = -Search(board, -beta, -alpha, depth - 1, startingDepth, isQuiet, timer);
             board.UndoMove(move);
 
             if (eval >= beta)
