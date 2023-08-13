@@ -179,7 +179,7 @@ public class MyBot : IChessBot
 
             int comp(Move move1, Move move2)
             {
-                return score(move1).CompareTo(score(move2));
+                return -score(move1).CompareTo(score(move2));
             }
 
             Array.Sort(moves, comp);
