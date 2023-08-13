@@ -1,35 +1,33 @@
 ﻿using ChessChallenge.API;
 using System;
-using System.Linq;
-using static ChessChallenge.Example.EvilBot;
 
 public class MyBot : IChessBot
 {
 
-    /*public struct Transposition
+    public struct Transposition
     {
         public ulong key;
         public int value;
         public Move bmove;
         public byte depth;
         public byte nodeType;
-        *//*0 -> Exact
+        /*0 -> Exact
         1 -> Alpha
         2 -> Beta*/
 
-    /*     public Transposition(ulong key, int value, Move bmove, byte depth, byte nodeType)
-         {
-             this.key = key;
-             this.value = value;
-             this.depth = depth;
-             this.nodeType = nodeType;
-             this.bmove = bmove;
-         }*//*
-}*/
+         public Transposition(ulong key, int value, Move bmove, byte depth, byte nodeType)
+        {
+            this.key = key;
+            this.value = value;
+            this.depth = depth;
+            this.nodeType = nodeType;
+            this.bmove = bmove;
+        }
+    }
 
     int[] pieceValues = { 0, 100, 320, 330, 500, 900, 20000 };
 
-    // Transposition[] transpoTable;
+    Transposition[] transpoTable;
 
 
 
@@ -89,7 +87,7 @@ public class MyBot : IChessBot
     Move bestMove;
     //Move secondBestMove;
     bool hasNotFinished;
-    int maxTime = 500;
+    int maxTime = 100;
     int posNB;
     Move finalMove;
     //Move secondFinalMove;
@@ -97,45 +95,45 @@ public class MyBot : IChessBot
     // int transpoNB;
 
 
-    /* public void SetTransposition(ulong key, int value, Move bmove, byte depth, byte nodeType)
-     {
-         int index = (int)(key % 10000);
-         transpoTable[index].key = key;
-         transpoTable[index].value = value;
-         transpoTable[index].depth = depth;
-         transpoTable[index].nodeType = nodeType;
-         transpoTable[index].bmove = bmove;
-     }
+    public void SetTransposition(ulong key, int value, Move bmove, byte depth, byte nodeType)
+    {
+        int index = (int)(key % 10000);
+        transpoTable[index].key = key;
+        transpoTable[index].value = value;
+        transpoTable[index].depth = depth;
+        transpoTable[index].nodeType = nodeType;
+        transpoTable[index].bmove = bmove;
+    }
 
-     public float TranspositionLookUp(ulong key, byte depth, float alpha, float beta)
-     {
-         Transposition t = transpoTable[key % 10000];
-         if (t.key == key)
-         {
-             if (t.depth >= depth)
-             {
-                 if (t.nodeType == 0)
-                 {
-                     return t.value;
-                 }
-                 if (t.nodeType == 1 && t.value <= alpha)
-                 {
-                     return alpha;
-                 }
-                 if (t.nodeType == 2 && t.value >= beta)
-                 {
-                     return beta;
-                 }
-             }
-         }
-         return float.NegativeInfinity;
-     }*/
+    public float TranspositionLookUp(ulong key, byte depth, float alpha, float beta)
+    {
+        Transposition t = transpoTable[key % 10000];
+        if (t.key == key)
+        {
+            if (t.depth >= depth)
+            {
+                if (t.nodeType == 0)
+                {
+                    return t.value;
+                }
+                if (t.nodeType == 1 && t.value <= alpha)
+                {
+                    return alpha;
+                }
+                if (t.nodeType == 2 && t.value >= beta)
+                {
+                    return beta;
+                }
+            }
+        }
+        return float.NegativeInfinity;
+    }
 
-  /*  public MyBot()
+    public MyBot()
     {
         transpoTable = new Transposition[10000];
         //transpoNB = 0;
-    }*/
+    }
 
 
     public Move Think(Board board, Timer timer)
@@ -189,15 +187,15 @@ public class MyBot : IChessBot
 
     public float Search(Board board, float alpha, float beta, int depth, int startingDepth, bool isQuiet, Timer timer)
     {
-        // byte nodeType = 1;
+        byte nodeType = 1;
         if (!isQuiet)
         {
-            /*float lookUpValue = TranspositionLookUp(board.ZobristKey, (byte)depth, alpha, beta);
-             if (lookUpValue > float.NegativeInfinity)
-             {
-                 //transpoNB += 1;
-                 return lookUpValue;
-             }*/
+            float lookUpValue = TranspositionLookUp(board.ZobristKey, (byte)depth, alpha, beta);
+            if (lookUpValue > float.NegativeInfinity)
+            {
+                //transpoNB += 1;
+                return lookUpValue;
+            }
 
             if (depth == 0)
             {
@@ -260,10 +258,10 @@ public class MyBot : IChessBot
 
             if (eval >= beta)
             {
-                /*if (!isQuiet)
+                if (!isQuiet)
                 {
                     SetTransposition(board.ZobristKey, (int)beta, move, (byte)depth, 2);
-                }*/
+                }
                 return beta;
             }
             if (eval > alpha)
@@ -280,7 +278,7 @@ public class MyBot : IChessBot
             //secondBestMove = secondCurrentBestMove;
         }
 
-        // SetTransposition(board.ZobristKey, (int)beta, currentBestMove, (byte)depth, nodeType);
+        SetTransposition(board.ZobristKey, (int)beta, currentBestMove, (byte)depth, nodeType);
         return alpha;
 
     }
