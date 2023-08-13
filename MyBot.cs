@@ -64,12 +64,12 @@ public class MyBot : IChessBot
                          20, 30, 10,  0} };
 
     Move bestMove;
-    //Move secondBestMove;
+    Move secondBestMove;
     bool hasNotFinished;
     int maxTime = 500;
     int posNB;
     Move finalMove;
-    //Move secondFinalMove;
+    Move secondFinalMove;
 
     // int transpoNB;
 
@@ -96,7 +96,7 @@ public class MyBot : IChessBot
                 Console.WriteLine(posNB);
                 lastEval = eval;
                 finalMove = bestMove;
-                //secondFinalMove = secondBestMove;
+                secondFinalMove = secondBestMove;
                 finalDepth += 1;
             }
             else
@@ -112,13 +112,13 @@ public class MyBot : IChessBot
 
         //Console.WriteLine("*------*");
 
-        /*board.MakeMove(finalMove);
+        board.MakeMove(finalMove);
         if (board.IsDraw() && lastEval > -50 && !secondFinalMove.Equals(Move.NullMove))
         {
             board.UndoMove(finalMove);
             return secondFinalMove;
         }
-        board.UndoMove(finalMove);*/
+        board.UndoMove(finalMove);
 
         return finalMove;
     }
@@ -178,7 +178,7 @@ public class MyBot : IChessBot
 
 
         Move currentBestMove = Move.NullMove;
-        //Move secondCurrentBestMove = Move.NullMove;
+        Move secondCurrentBestMove = Move.NullMove;
 
         foreach (var move in moves)
         {
@@ -194,7 +194,7 @@ public class MyBot : IChessBot
             if (eval > alpha)
             {
                 alpha = eval;
-                //secondCurrentBestMove = currentBestMove;
+                secondCurrentBestMove = currentBestMove;
                 currentBestMove = move;
             }
         }
@@ -202,7 +202,7 @@ public class MyBot : IChessBot
         if (!isQuiet && depth == startingDepth)
         {
             bestMove = currentBestMove;
-            //secondBestMove = secondCurrentBestMove;
+            secondBestMove = secondCurrentBestMove;
         }
 
         return alpha;
