@@ -67,6 +67,7 @@ public class MyBot : IChessBot
     Move finalMove;
 
 
+
     public Move Think(Board board, Timer timer)
     {
 
@@ -153,7 +154,7 @@ public class MyBot : IChessBot
 
         if (board.IsInCheckmate())
         {
-            return -20000;
+            return -1000;
         }
 
         if (timer.MillisecondsElapsedThisTurn > maxTime)
@@ -204,21 +205,19 @@ public class MyBot : IChessBot
         return alpha;
 
     }
+
+
     public float Eval(Board board)
     {
         float score = 0;
 
         PieceList[] plists = board.GetAllPieceLists();
 
-        int pieceNumber = 0;
-
-        foreach (PieceList plist in plists)
-        {
-            pieceNumber += plist.Count;
-        }
-
-
+        int pieceNumber = BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard);
         float endGameCoef = 1 - (pieceNumber / 32);
+
+        ulong[] control = new ulong[2];
+
 
         foreach (PieceList plist in plists)
         {
@@ -228,17 +227,25 @@ public class MyBot : IChessBot
 
                 int colorMult = board.IsWhiteToMove == p.IsWhite ? 1 : -1;
 
-                score += pieceValues[(int)p.PieceType] * colorMult * 3;
-                score += tables[(int)p.PieceType - 1, (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] * colorMult * (1 - endGameCoef);
+                control[p.IsWhite ? 0 : 1] |= BitboardHelper.GetPieceAttacks(p.PieceType, p.Square, board, p.IsWhite);
+
+                score += pieceValues[(int)p.PieceType] * colorMult * 0.3f;
+
+                score += tables[(int)p.PieceType - 1, (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] * pieceValues[(int)p.PieceType] * colorMult * (1 - endGameCoef) * 0.02f;
 
                 if (p.PieceType == PieceType.King)
                 {
-                    score -= (Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * colorMult * 10;
+                    score -= (Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * colorMult * 3;
                 }
+
+                score -= (board.IsInCheck() ? 5 : 0);
 
             }
         }
 
-        return score;
+        score += (BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * (board.IsWhiteToMove ? 1 : -1) * 2;
+
+
+        return score * 0.01f;
     }
 }
