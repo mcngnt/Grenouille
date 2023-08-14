@@ -129,11 +129,11 @@ public class MyBot : IChessBot
         }
         else
         {
+            float currentEval = 0;
 
             float endGameCoef = 1 - (BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard) / 32);
-            ulong[] control = new ulong[2];
 
-            float currentEval = (BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * (board.IsWhiteToMove ? 1 : -1) * 0.002f + ((hasCastled >> 1) - (hasCastled % 2)) * (board.IsWhiteToMove ? 1 : -1) * 0.02f;
+            ulong[] control = new ulong[2];
 
 
             foreach (PieceList plist in board.GetAllPieceLists())
@@ -144,10 +144,13 @@ public class MyBot : IChessBot
 
                     control[p.IsWhite ? 0 : 1] |= BitboardHelper.GetPieceAttacks(p.PieceType, p.Square, board, p.IsWhite);
 
-                    currentEval += ( pieceValues[(int)p.PieceType] * 0.003f + tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] * pieceValues[(int)p.PieceType] * (1 - endGameCoef) * 0.0002f + (p.PieceType == PieceType.King ? -(Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * 0.003f : 0) ) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1) + (board.IsInCheck() ? -0.005f : 0);
+                    currentEval += ( pieceValues[(int)p.PieceType] * 0.3f + tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] * pieceValues[(int)p.PieceType] * (1 - endGameCoef) * 0.02f + (p.PieceType == PieceType.King ? -(Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * 3 : 0) ) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1) + (board.IsInCheck() ? -5 : 0);
 
                 }
             }
+
+            currentEval += (BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * (board.IsWhiteToMove ? 1 : -1) * 2 + ((hasCastled >> 1) - (hasCastled % 2)) * (board.IsWhiteToMove ? 1 : -1) * 20;
+            currentEval *= 0.01f;
 
             if (currentEval >= beta)
             {
