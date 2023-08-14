@@ -72,7 +72,17 @@ public class MyBot : IChessBot
 
     public Move Think(Board board, Timer timer)
     {
+        int castleMask = 0;
+        bool sideMoving = board.IsWhiteToMove;
 
+        foreach (Move move in board.GameMoveHistory)
+        {
+            if (move.IsCastles)
+            {
+                sideMoving = !sideMoving;
+                castleMask |= (sideMoving ? 1 : 2);
+            }
+        }
 
         killerMoves = new HashSet<Move>[62];
 
@@ -82,12 +92,14 @@ public class MyBot : IChessBot
 
         Console.WriteLine("*------*");
 
+        Console.WriteLine("Castle mask : " + castleMask);
+
         for (int i = 1; i <= 60; i++)
         {
             killerMoves[i] = new HashSet<Move>();
             hasNotFinished = false;
             posNB = 0;
-            float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false);
+            float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false, castleMask);
             finalMove = bestMove;
             if (!hasNotFinished)
             {
@@ -114,7 +126,8 @@ public class MyBot : IChessBot
         return finalMove;
     }
 
-    public float Search(Board board, float alpha, float beta, int depth, int startingDepth, Timer timer, bool isQuiescence)
+    /* Has Castled :  00 | 01 | 10 | 11  -> Back | White */
+    public float Search(Board board, float alpha, float beta, int depth, int startingDepth, Timer timer, bool isQuiescence, int hasCastled)
     {
 
         if (!isQuiescence)
@@ -122,7 +135,7 @@ public class MyBot : IChessBot
             if (depth == 0)
             {
                 posNB += 1;
-                return Search(board, alpha, beta, 0, startingDepth, timer, true);
+                return Search(board, alpha, beta, 0, startingDepth, timer, true, hasCastled);
             }
 
             if (board.IsDraw())
@@ -144,7 +157,7 @@ public class MyBot : IChessBot
         }
         else
         {
-            float currentEval = Eval(board);
+            float currentEval = Eval(board, hasCastled);
             if (currentEval >= beta)
             {
                 return beta;
@@ -160,7 +173,7 @@ public class MyBot : IChessBot
 
         float score(Move move)
         {
-            return (move.Equals(finalMove) ? 9999f : 0f) + (!isQuiescence && killerMoves[depth].Contains(move) ? 999f : 0f ) + (move.IsPromotion ? pieceValues[(int)move.PromotionPieceType] : 0f) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
+            return (move.Equals(finalMove) ? 99999f : 0f) + (!isQuiescence && killerMoves[depth].Contains(move) ? 9999f : 0f ) + (move.IsCastles ? 999f : 0f) + (move.IsPromotion ? pieceValues[(int)move.PromotionPieceType] : 0f) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
         }
 
         int comp(Move move1, Move move2)
@@ -176,7 +189,7 @@ public class MyBot : IChessBot
         {
             board.MakeMove(move);
             int extension = board.IsInCheck() ? 1 : 0;
-            float eval = -Search(board, -beta, -alpha, depth - 1 + extension, startingDepth + extension, timer, isQuiescence);
+            float eval = -Search(board, -beta, -alpha, depth - 1 + extension, startingDepth + extension, timer, isQuiescence, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0) );
             board.UndoMove(move);
 
             if (eval >= beta)
@@ -203,7 +216,7 @@ public class MyBot : IChessBot
     }
 
 
-    public float Eval(Board board)
+    public float Eval(Board board, int hasCastled)
     {
         float score = 0;
 
@@ -240,6 +253,10 @@ public class MyBot : IChessBot
         }
 
         score += (BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * (board.IsWhiteToMove ? 1 : -1) * 2;
+
+        
+
+        score += ((hasCastled >> 1) - (hasCastled % 2)) * (board.IsWhiteToMove ? 1 : -1) * 20;
 
 
         return score * 0.01f;
