@@ -88,7 +88,7 @@ public class MyBot : IChessBot
             killerMoves[i] = new HashSet<Move>();
             hasNotFinished = false;
             posNB = 0;
-            float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false);
+            Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false);
             finalMove = bestMove;
             if (hasNotFinished)
             {
@@ -209,8 +209,7 @@ public class MyBot : IChessBot
 
         PieceList[] plists = board.GetAllPieceLists();
 
-        int pieceNumber = BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard);
-        float endGameCoef = 1 - (pieceNumber / 32);
+        float endGameCoef = 1f - (BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard) / 32f);
 
         ulong[] control = new ulong[2];
 
