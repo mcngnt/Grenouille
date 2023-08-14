@@ -66,12 +66,12 @@ public class MyBot : IChessBot
     int maxTime = 100;
     int posNB;
     Move finalMove;
-    HashSet<Move>[] killerMoves;
 
 
 
     public Move Think(Board board, Timer timer)
     {
+
 
         /* float lastEval = 0;*/
 
@@ -79,41 +79,32 @@ public class MyBot : IChessBot
 
         /*Console.WriteLine("*------*");*/
 
-        killerMoves = new HashSet<Move>[60];
-
-        killerMoves[0] = new HashSet<Move>();
-
-        for (int i = 1; i <= 60; i++)
+        for (int i = 1; i <= 99; i++)
         {
-            killerMoves[i] = new HashSet<Move>();
             hasNotFinished = false;
             posNB = 0;
-            Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false);
+            float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false);
             finalMove = bestMove;
-            if (hasNotFinished)
+            if (!hasNotFinished)
             {
-                break;
-            }
-/*            if (!hasNotFinished)
-            {
-                *//*Console.WriteLine("Depth " + i + " , posNB : " + posNB);*/
+                /*Console.WriteLine("Depth " + i + " , posNB : " + posNB);*/
                 /*lastEval = eval;
-                finalDepth += 1;*//*
+                finalDepth += 1;*/
             }
             else
             {
                 break;
-            }*/
+            }
         }
 
 
-/*
-        Console.WriteLine("------");
+        /*
+                Console.WriteLine("------");
 
-        Console.WriteLine("Pos eval : " + lastEval);
-        Console.WriteLine("Max depth reached : " +  finalDepth);
+                Console.WriteLine("Pos eval : " + lastEval);
+                Console.WriteLine("Max depth reached : " +  finalDepth);
 
-        Console.WriteLine("*------*");*/
+                Console.WriteLine("*------*");*/
 
 
         return finalMove;
@@ -160,7 +151,7 @@ public class MyBot : IChessBot
 
         float score(Move move)
         {
-            return (move.Equals(finalMove) ? 99999f : 0f) + (!isQuiescence && killerMoves[depth].Contains(move) ? 9999f : 0f) + (move.IsCastles ? 999f : 0f )+ (move.IsPromotion ? pieceValues[(int)move.PromotionPieceType] : 0f) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
+            return (move.Equals(finalMove) ? 9999f : 0f) + (move.IsPromotion ? pieceValues[(int)move.PromotionPieceType] : 0f) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
         }
 
         int comp(Move move1, Move move2)
@@ -181,17 +172,13 @@ public class MyBot : IChessBot
 
             if (eval >= beta)
             {
-                if(!isQuiescence)
-                {
-                    killerMoves[depth].Add(move);
-                }
                 return beta;
             }
             if (eval > alpha)
             {
                 alpha = eval;
-                if(depth == startingDepth && !hasNotFinished)
-        {
+                if (depth == startingDepth && !hasNotFinished)
+                {
                     bestMove = move;
                 }
             }
@@ -209,7 +196,8 @@ public class MyBot : IChessBot
 
         PieceList[] plists = board.GetAllPieceLists();
 
-        float endGameCoef = 1f - (BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard) / 32f);
+        int pieceNumber = BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard);
+        float endGameCoef = 1 - (pieceNumber / 32);
 
         ulong[] control = new ulong[2];
 
