@@ -62,7 +62,7 @@ public class MyBot : IChessBot
 
     Move bestMove;
     bool hasNotFinished;
-    int maxTime = 100;
+    int maxTime = 5000;
     int posNB;
     Move finalMove;
 
@@ -72,23 +72,23 @@ public class MyBot : IChessBot
     {
 
 
-        float lastEval = 0;
+       /* float lastEval = 0;*/
 
-        int finalDepth = 0;
+        /*int finalDepth = 0;*/
 
-        Console.WriteLine("*------*");
+        /*Console.WriteLine("*------*");*/
 
         for (int i = 1; i <= 99; i++)
         {
             hasNotFinished = false;
             posNB = 0;
-            float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer);
+            float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false);
             finalMove = bestMove;
             if (!hasNotFinished)
             {
-                Console.WriteLine("Depth " + i + " , posNB : " + posNB);
-                lastEval = eval;
-                finalDepth += 1;
+                /*Console.WriteLine("Depth " + i + " , posNB : " + posNB);*/
+                /*lastEval = eval;
+                finalDepth += 1;*/
             }
             else
             {
@@ -97,74 +97,56 @@ public class MyBot : IChessBot
         }
 
 
-
+/*
         Console.WriteLine("------");
 
         Console.WriteLine("Pos eval : " + lastEval);
         Console.WriteLine("Max depth reached : " +  finalDepth);
 
-        Console.WriteLine("*------*");
+        Console.WriteLine("*------*");*/
 
 
         return finalMove;
     }
 
-    public float QuiescenceSearch(Board board, float alpha, float beta)
+    public float Search(Board board, float alpha, float beta, int depth, int startingDepth, Timer timer, bool isQuiescence)
     {
-        float currentEval = Eval(board);
-        if (currentEval >= beta)
+
+        if (!isQuiescence)
         {
-            return beta;
+            if (depth == 0)
+            {
+                posNB += 1;
+                return Search(board, alpha, beta, 0, startingDepth, timer, true);
+            }
+
+            if (board.IsInCheckmate())
+            {
+                return -1000;
+            }
+
+            if (timer.MillisecondsElapsedThisTurn > maxTime)
+            {
+                hasNotFinished = true;
+                return 0;
+            }
+
         }
-        if (currentEval > alpha)
+        else
         {
-            alpha = currentEval;
-        }
-
-        Move[] moves = board.GetLegalMoves(true);
-
-        foreach (var move in moves)
-        {
-            board.MakeMove(move);
-            float eval = -QuiescenceSearch(board, -beta,-alpha);
-            board.UndoMove(move);
-
-            if (eval >= beta)
+            float currentEval = Eval(board);
+            if (currentEval >= beta)
             {
                 return beta;
             }
-            if (eval > alpha)
+            if (currentEval > alpha)
             {
-                alpha = eval;
+                alpha = currentEval;
             }
         }
 
-        return alpha;
-    }
 
-
-    public float Search(Board board, float alpha, float beta, int depth, int startingDepth, Timer timer)
-    {
-
-        if (depth == 0)
-        {
-            posNB += 1;
-            return QuiescenceSearch(board, alpha, beta);
-        }
-
-        if (board.IsInCheckmate())
-        {
-            return -1000;
-        }
-
-        if (timer.MillisecondsElapsedThisTurn > maxTime)
-        {
-            hasNotFinished = true;
-            return 0;
-        }
-
-
-        Move[] moves = board.GetLegalMoves(false);
+        Move[] moves = board.GetLegalMoves(isQuiescence);
 
         float score(Move move)
         {
@@ -184,7 +166,7 @@ public class MyBot : IChessBot
         {
             board.MakeMove(move);
             int extension = board.IsInCheck() ? 1 : 0;
-            float eval = -Search(board, -beta, -alpha, depth - 1 + extension, startingDepth + extension, timer);
+            float eval = -Search(board, -beta, -alpha, depth - 1 + extension, startingDepth + extension, timer, isQuiescence);
             board.UndoMove(move);
 
             if (eval >= beta)
