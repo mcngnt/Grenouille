@@ -62,13 +62,8 @@ public class MyBot : IChessBot
 
     Move bestMove;
     bool hasNotFinished;
-    int maxTime = 100;
-    int posNB;
     Move finalMove;
-
     HashSet<Move>[] killerMoves;
-
-
 
     public Move Think(Board board, Timer timer)
     {
@@ -86,42 +81,18 @@ public class MyBot : IChessBot
 
         killerMoves = new HashSet<Move>[62];
 
-        float lastEval = 0;
-
-        int finalDepth = 0;
-
-        Console.WriteLine("*------*");
-
-        Console.WriteLine("Castle mask : " + castleMask);
 
         for (int i = 1; i <= 60; i++)
         {
             killerMoves[i] = new HashSet<Move>();
             hasNotFinished = false;
-            posNB = 0;
-            float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false, castleMask);
+            Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false, castleMask);
             finalMove = bestMove;
-            if (!hasNotFinished)
-            {
-                Console.WriteLine("Depth " + i + " , posNB : " + posNB);
-                lastEval = eval;
-                finalDepth += 1;
-            }
-            else
+            if (hasNotFinished)
             {
                 break;
             }
         }
-
-
-
-        Console.WriteLine("------");
-
-        Console.WriteLine("Pos eval : " + lastEval);
-        Console.WriteLine("Max depth reached : " + finalDepth);
-
-        Console.WriteLine("*------*");
-
 
         return finalMove;
     }
@@ -134,7 +105,6 @@ public class MyBot : IChessBot
         {
             if (depth == 0)
             {
-                posNB += 1;
                 return Search(board, alpha, beta, 0, startingDepth, timer, true, hasCastled);
             }
 
@@ -148,7 +118,7 @@ public class MyBot : IChessBot
                 return -1000;
             }
 
-            if (timer.MillisecondsElapsedThisTurn > maxTime)
+            if (timer.MillisecondsElapsedThisTurn > 100)
             {
                 hasNotFinished = true;
                 return 0;
@@ -157,7 +127,33 @@ public class MyBot : IChessBot
         }
         else
         {
-            float currentEval = Eval(board, hasCastled);
+            float currentEval = 0;
+
+            PieceList[] plists = board.GetAllPieceLists();
+
+            float endGameCoef = 1 - (BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard) / 32);
+
+            ulong[] control = new ulong[2];
+
+
+            foreach (PieceList plist in plists)
+            {
+                for (int i = 0; i < plist.Count; i++)
+                {
+                    Piece p = plist.GetPiece(i);
+
+                    int colorMult = board.IsWhiteToMove == p.IsWhite ? 1 : -1;
+
+                    control[p.IsWhite ? 0 : 1] |= BitboardHelper.GetPieceAttacks(p.PieceType, p.Square, board, p.IsWhite);
+
+                    currentEval += pieceValues[(int)p.PieceType] * colorMult * 0.3f + tables[(int)p.PieceType - 1, (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] * pieceValues[(int)p.PieceType] * colorMult * (1 - endGameCoef) * 0.02f + (p.PieceType == PieceType.King ? -(Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * colorMult * 3 : 0) + (board.IsInCheck() ? -5 : 0); ;
+
+                }
+            }
+
+            currentEval += (BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * (board.IsWhiteToMove ? 1 : -1) * 2 + ((hasCastled >> 1) - (hasCastled % 2)) * (board.IsWhiteToMove ? 1 : -1) * 20;
+            currentEval *= 0.01f;
+
             if (currentEval >= beta)
             {
                 return beta;
@@ -210,55 +206,9 @@ public class MyBot : IChessBot
             }
         }
 
-
         return alpha;
 
     }
 
 
-    public float Eval(Board board, int hasCastled)
-    {
-        float score = 0;
-
-        PieceList[] plists = board.GetAllPieceLists();
-
-        int pieceNumber = BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard);
-        float endGameCoef = 1 - (pieceNumber / 32);
-
-        ulong[] control = new ulong[2];
-
-
-        foreach (PieceList plist in plists)
-        {
-            for (int i = 0; i < plist.Count; i++)
-            {
-                Piece p = plist.GetPiece(i);
-
-                int colorMult = board.IsWhiteToMove == p.IsWhite ? 1 : -1;
-
-                control[p.IsWhite ? 0 : 1] |= BitboardHelper.GetPieceAttacks(p.PieceType, p.Square, board, p.IsWhite);
-
-                score += pieceValues[(int)p.PieceType] * colorMult * 0.3f;
-
-                score += tables[(int)p.PieceType - 1, (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] * pieceValues[(int)p.PieceType] * colorMult * (1 - endGameCoef) * 0.02f;
-
-                if (p.PieceType == PieceType.King)
-                {
-                    score -= (Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * colorMult * 3;
-                }
-
-                score -= (board.IsInCheck() ? 5 : 0);
-
-            }
-        }
-
-        score += (BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * (board.IsWhiteToMove ? 1 : -1) * 2;
-
-        
-
-        score += ((hasCastled >> 1) - (hasCastled % 2)) * (board.IsWhiteToMove ? 1 : -1) * 20;
-
-
-        return score * 0.01f;
-    }
 }
