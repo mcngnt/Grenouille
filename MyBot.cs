@@ -121,6 +121,11 @@ public class MyBot : IChessBot
                 return Search(board, alpha, beta, 0, startingDepth, timer, true);
             }
 
+            if (board.IsDraw())
+            {
+                return 0;
+            }
+
             if (board.IsInCheckmate())
             {
                 return -1000;
