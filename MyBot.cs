@@ -1,5 +1,6 @@
 ﻿using ChessChallenge.API;
 using System;
+using System.Collections.Generic;
 using static System.Formats.Asn1.AsnWriter;
 
 public class MyBot : IChessBot
@@ -62,38 +63,47 @@ public class MyBot : IChessBot
 
     Move bestMove;
     bool hasNotFinished;
-    int maxTime = 5000;
+    int maxTime = 100;
     int posNB;
     Move finalMove;
+    HashSet<Move>[] killerMoves;
 
 
 
     public Move Think(Board board, Timer timer)
     {
 
-
-       /* float lastEval = 0;*/
+        /* float lastEval = 0;*/
 
         /*int finalDepth = 0;*/
 
         /*Console.WriteLine("*------*");*/
 
-        for (int i = 1; i <= 99; i++)
+        killerMoves = new HashSet<Move>[60];
+
+        killerMoves[0] = new HashSet<Move>();
+
+        for (int i = 1; i <= 60; i++)
         {
+            killerMoves[i] = new HashSet<Move>();
             hasNotFinished = false;
             posNB = 0;
             float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false);
             finalMove = bestMove;
-            if (!hasNotFinished)
+            if (hasNotFinished)
             {
-                /*Console.WriteLine("Depth " + i + " , posNB : " + posNB);*/
+                break;
+            }
+/*            if (!hasNotFinished)
+            {
+                *//*Console.WriteLine("Depth " + i + " , posNB : " + posNB);*/
                 /*lastEval = eval;
-                finalDepth += 1;*/
+                finalDepth += 1;*//*
             }
             else
             {
                 break;
-            }
+            }*/
         }
 
 
@@ -150,7 +160,7 @@ public class MyBot : IChessBot
 
         float score(Move move)
         {
-            return (move.Equals(finalMove) ? 9999f : 0f) + (move.IsPromotion ? pieceValues[(int)move.PromotionPieceType] : 0f) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
+            return (move.Equals(finalMove) ? 99999f : 0f) + (!isQuiescence && killerMoves[depth].Contains(move) ? 9999f : 0f) + (move.IsCastles ? 999f : 0f )+ (move.IsPromotion ? pieceValues[(int)move.PromotionPieceType] : 0f) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
         }
 
         int comp(Move move1, Move move2)
@@ -171,6 +181,10 @@ public class MyBot : IChessBot
 
             if (eval >= beta)
             {
+                if(!isQuiescence)
+                {
+                    killerMoves[depth].Add(move);
+                }
                 return beta;
             }
             if (eval > alpha)
