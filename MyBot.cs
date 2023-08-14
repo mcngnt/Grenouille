@@ -70,41 +70,12 @@ public class MyBot : IChessBot
     public Move Think(Board board, Timer timer)
     {
 
-        //Console.WriteLine(Eval(Board.CreateBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")));
-
-       /* PieceList[] plists = board.GetAllPieceLists();
-
-
-        foreach (PieceList plist in plists)
-        {
-            for (int i = 0; i < plist.Count; i++)
-            {
-                Piece p = plist.GetPiece(i);
-
-
-                Console.WriteLine("Piece Color : " + p.IsWhite);
-                Console.WriteLine("Piece Type : " + p.PieceType);
-                Console.WriteLine("Value : " + tables[(int)p.PieceType - 1, (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)]);
-
-            }
-        }
-
-        int pieceNumber = 0;
-
-        foreach (PieceList plist in plists)
-        {
-            pieceNumber += plist.Count;
-        }
-        // 0 at first and 1 in endgame
-        float endGameCoef = 1 - (pieceNumber / 32);
-
-        Console.WriteLine("EndGameCoef : " + endGameCoef);*/
 
         float lastEval = 0;
 
         int finalDepth = 0;
 
-        //Console.WriteLine("*------*");
+        Console.WriteLine("*------*");
 
         for (int i = 1; i <= 99; i++)
         {
@@ -114,7 +85,7 @@ public class MyBot : IChessBot
 
             if (!hasNotFinished)
             {
-                Console.WriteLine(posNB);
+                Console.WriteLine("Depth {i}, posNB : " + posNB);
                 lastEval = eval;
                 finalMove = bestMove;
                 finalDepth += 1;
@@ -127,12 +98,12 @@ public class MyBot : IChessBot
 
 
 
-        //Console.WriteLine("------");
+        Console.WriteLine("------");
 
-        //Console.WriteLine(lastEval);
-        //Console.WriteLine(finalDepth);
+        Console.WriteLine(lastEval);
+        Console.WriteLine(finalDepth);
 
-        //Console.WriteLine("*------*");
+        Console.WriteLine("*------*");
 
 
         return finalMove;
