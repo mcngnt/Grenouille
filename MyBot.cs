@@ -82,12 +82,11 @@ public class MyBot : IChessBot
             hasNotFinished = false;
             posNB = 0;
             float eval = Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer);
-
+            finalMove = bestMove;
             if (!hasNotFinished)
             {
-                Console.WriteLine("Depth {i}, posNB : " + posNB);
+                Console.WriteLine("Depth " + i + " , posNB : " + posNB);
                 lastEval = eval;
-                finalMove = bestMove;
                 finalDepth += 1;
             }
             else
@@ -100,8 +99,8 @@ public class MyBot : IChessBot
 
         Console.WriteLine("------");
 
-        Console.WriteLine(lastEval);
-        Console.WriteLine(finalDepth);
+        Console.WriteLine("Pos eval : " + lastEval);
+        Console.WriteLine("Max depth reached : " +  finalDepth);
 
         Console.WriteLine("*------*");
 
@@ -109,7 +108,7 @@ public class MyBot : IChessBot
         return finalMove;
     }
 
-    public float QuiescneceSearch(Board board, float alpha, float beta)
+    public float QuiescenceSearch(Board board, float alpha, float beta)
     {
         float currentEval = Eval(board);
         if (currentEval >= beta)
@@ -126,7 +125,7 @@ public class MyBot : IChessBot
         foreach (var move in moves)
         {
             board.MakeMove(move);
-            float eval = -QuiescneceSearch(board, alpha, beta);
+            float eval = -QuiescenceSearch(board, -beta,-alpha);
             board.UndoMove(move);
 
             if (eval >= beta)
@@ -149,7 +148,7 @@ public class MyBot : IChessBot
         if (depth == 0)
         {
             posNB += 1;
-            return QuiescneceSearch(board, alpha, beta);
+            return QuiescenceSearch(board, alpha, beta);
         }
 
         if (board.IsInCheckmate())
@@ -179,7 +178,6 @@ public class MyBot : IChessBot
         Array.Sort(moves, comp);
 
 
-        Move currentBestMove = Move.NullMove;
 
         foreach (var move in moves)
         {
@@ -195,14 +193,13 @@ public class MyBot : IChessBot
             if (eval > alpha)
             {
                 alpha = eval;
-                currentBestMove = move;
+                if(depth == startingDepth && !hasNotFinished)
+        {
+                    bestMove = move;
+                }
             }
         }
 
-        if (depth == startingDepth)
-        {
-            bestMove = currentBestMove;
-        }
 
         return alpha;
 
@@ -219,7 +216,6 @@ public class MyBot : IChessBot
         {
             pieceNumber += plist.Count;
         }
-
 
 
         float endGameCoef = 1 - (pieceNumber / 32);
