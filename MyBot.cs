@@ -62,12 +62,14 @@ public class MyBot : IChessBot
                          20, 30, 10,  0 };
 
     Move bestMove;
-    bool hasNotFinished;
+    //bool hasNotFinished;
     //Move finalMove;
     HashSet<Move>[] killerMoves;
+    int maxTime = 100;
 
     public Move Think(Board board, Timer timer)
     {
+
         int castleMask = 0;
         bool sideMoving = board.IsWhiteToMove;
 
@@ -86,10 +88,10 @@ public class MyBot : IChessBot
         for (int i = 1; i <= 60; i++)
         {
             killerMoves[i] = new HashSet<Move>();
-            hasNotFinished = false;
+            //hasNotFinished = false;
             Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false, castleMask);
             //finalMove = bestMove;
-            if (hasNotFinished)
+            if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
             }
@@ -110,7 +112,7 @@ public class MyBot : IChessBot
                 return Search(board, alpha, beta, 0, startingDepth, timer, true, hasCastled);
             }
 
-            if (board.IsDraw())
+            if (board.IsDraw() || timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 return 0;
             }
@@ -120,11 +122,6 @@ public class MyBot : IChessBot
                 return -1000;
             }
 
-            if (timer.MillisecondsElapsedThisTurn > 100)
-            {
-                hasNotFinished = true;
-                return 0;
-            }
 
         }
         else
@@ -196,7 +193,7 @@ public class MyBot : IChessBot
             if (eval > alpha)
             {
                 alpha = eval;
-                if (depth == startingDepth && !hasNotFinished)
+                if (depth == startingDepth && timer.MillisecondsElapsedThisTurn < maxTime)
                 {
                     bestMove = move;
                 }
