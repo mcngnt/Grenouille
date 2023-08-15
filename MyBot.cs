@@ -7,7 +7,7 @@ public class MyBot : IChessBot
     // None, Pawn, Knight, Bishop, Rook, Queen, King
     int[] pieceValues = { 0, 100, 320, 330, 500, 900, 20000 };
 
-    int[] tables    =  {0,  0,  0,  0,
+    int[] tables =  {0,  0,  0,  0,
                         50, 50, 50, 50,
                         10, 10, 20, 30,
                         5,  5, 10, 25,
@@ -126,9 +126,9 @@ public class MyBot : IChessBot
         }
         else
         {
-            float endGameCoef = 1 - (BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard) / 32);
             float currentEval = (board.IsInCheck() ? -5 : 0);
 
+            float endGameCoef = 1 - (BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard) / 32);
 
             ulong[] control = new ulong[2];
 
@@ -141,12 +141,12 @@ public class MyBot : IChessBot
 
                     control[p.IsWhite ? 0 : 1] |= BitboardHelper.GetPieceAttacks(p.PieceType, p.Square, board, p.IsWhite);
 
-                    currentEval += ( pieceValues[(int)p.PieceType] * 0.3f + tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] * pieceValues[(int)p.PieceType] * (1 - endGameCoef) * 0.02f + (p.PieceType == PieceType.King ? -(Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * 3 : 0) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1);
+                    currentEval += (pieceValues[(int)p.PieceType] * 0.3f + tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] * pieceValues[(int)p.PieceType] * (1 - endGameCoef) * 0.02f + (p.PieceType == PieceType.King ? -(Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * 3 : 0)) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1);
 
                 }
             }
 
-            currentEval += ((BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * 2 + ((hasCastled >> 1) - (hasCastled % 2)) * 20 ) * (board.IsWhiteToMove ? 1 : -1);
+            currentEval += ((BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * 2 + ((hasCastled >> 1) - (hasCastled % 2)) * 20) * (board.IsWhiteToMove ? 1 : -1);
             currentEval *= 0.01f;
 
             if (currentEval >= beta)
@@ -173,6 +173,7 @@ public class MyBot : IChessBot
         }
 
         Array.Sort(moves, comp);
+
 
         foreach (var move in moves)
         {
