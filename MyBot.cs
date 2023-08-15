@@ -174,11 +174,11 @@ public class MyBot : IChessBot
 
         Array.Sort(moves, comp);
 
-
+        int moveNB = 0;
         foreach (var move in moves)
         {
             board.MakeMove(move);
-            int extension = board.IsInCheck() ? 1 : 0;
+            int extension = (board.IsInCheck() ? 1 : (moveNB >= 3 ? -1 : 0));
             float eval = -Search(board, -beta, -alpha, depth - 1 + extension, startingDepth + extension, timer, isQuiescence, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0));
             board.UndoMove(move);
 
@@ -198,6 +198,7 @@ public class MyBot : IChessBot
                     bestMove = move;
                 }
             }
+            moveNB++;
         }
 
         return alpha;
