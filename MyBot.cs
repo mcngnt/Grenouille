@@ -84,6 +84,8 @@ public class MyBot : IChessBot
 
         killerMoves = new HashSet<Move>[62];
 
+        maxTime = timer.MillisecondsRemaining / 60;
+
 
         for (int i = 1; i <= 60; i++)
         {
@@ -93,6 +95,7 @@ public class MyBot : IChessBot
             //finalMove = bestMove;
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
+                Console.WriteLine(i - 1);
                 break;
             }
         }
@@ -141,12 +144,12 @@ public class MyBot : IChessBot
 
                     control[p.IsWhite ? 0 : 1] |= BitboardHelper.GetPieceAttacks(p.PieceType, p.Square, board, p.IsWhite);
 
-                    currentEval += (pieceValues[(int)p.PieceType] * 0.26f + (tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] - 50) * pieceValues[(int)p.PieceType] * (1 - endGameCoef) * 0.0003f + (p.PieceType == PieceType.King ? -(Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * endGameCoef * 0.95f : 0)) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1);
+                    currentEval += (pieceValues[(int)p.PieceType] * 0.26f + (tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] - 50) * pieceValues[(int)p.PieceType] * (1 - endGameCoef) * 0.0003f - (p.PieceType == PieceType.King ? Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3) * endGameCoef * endGameCoef * 0.95f : 0)) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1);
 
                 }
             }
 
-            currentEval += ((BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * 3.7f + ((hasCastled >> 1) - (hasCastled % 2)) * 20f  ) * (board.IsWhiteToMove ? 1 : -1);
+            currentEval += ((BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * 3.7f + ((hasCastled >> 1) - (hasCastled % 2)) * 20f ) * (board.IsWhiteToMove ? 1 : -1);
             currentEval *= 0.01f;
 
             if (currentEval >= beta)
