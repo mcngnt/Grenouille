@@ -62,8 +62,6 @@ public class MyBot : IChessBot
                          30,  20,  20,  15, };
 
     Move bestMove;
-    //bool hasNotFinished;
-    //Move finalMove;
     HashSet<Move>[] killerMoves;
     int maxTime = 100;
 
@@ -84,23 +82,19 @@ public class MyBot : IChessBot
 
         killerMoves = new HashSet<Move>[62];
 
-        maxTime = timer.MillisecondsRemaining / 60;
+        maxTime = timer.MillisecondsRemaining / 30;
 
 
         for (int i = 1; i <= 60; i++)
         {
             killerMoves[i] = new HashSet<Move>();
-            //hasNotFinished = false;
             Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false, castleMask);
-            //finalMove = bestMove;
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
-                Console.WriteLine(i - 1);
                 break;
             }
         }
 
-        //return finalMove;
         return bestMove;
     }
 
@@ -144,7 +138,7 @@ public class MyBot : IChessBot
 
                     control[p.IsWhite ? 0 : 1] |= BitboardHelper.GetPieceAttacks(p.PieceType, p.Square, board, p.IsWhite);
 
-                    currentEval += (pieceValues[(int)p.PieceType] * 0.26f + (tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] - 50) * pieceValues[(int)p.PieceType] * (1 - endGameCoef) * 0.0003f - (p.PieceType == PieceType.King ? Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3) * endGameCoef * endGameCoef * 0.95f : 0)) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1);
+                    currentEval += (pieceValues[(int)p.PieceType] * 0.26f + (tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] - 50) * (1 - endGameCoef) * 0.06f - (p.PieceType == PieceType.King ? Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3) * endGameCoef * endGameCoef * 0.95f : 0)) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1);
 
                 }
             }
