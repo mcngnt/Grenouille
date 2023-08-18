@@ -7,59 +7,59 @@ public class MyBot : IChessBot
     // None, Pawn, Knight, Bishop, Rook, Queen, King
     int[] pieceValues = { 0, 100, 320, 330, 500, 900, 20000 };
 
-    int[] tables =  {0,  0,  0,  0,
-                        50, 50, 50, 50,
-                        10, 10, 20, 30,
-                        5,  5, 10, 25,
-                        0,  0,  0, 20,
-                        5, -5,-10,  0,
-                        5, 10, 10,-20,
-                        0, 0,  0,   0,
+    int[] tables =  {    50,  50,  50,  50,
+                        100, 100, 100, 100,
+                         60,  60,  70,  80,
+                         55,  55,  60,  75,
+                         50,  50,  50,  70,
+                         55,  45,  40,  50,
+                         55,  60,  60,  30,
+                         50,  50,  50,  50,
 
-                         -50,-40,-30,-30,
-                         -30,  0, 10, 15,
-                         -30,  5, 15, 20,
-                         -30,  0, 15, 20,
-                         -30,  5, 10, 15,
-                         -40,-20,  0,  0,
-                         -40,-20,  0,  5,
-                         -50,-40,-30,-30,
+                          0,  10,  20,  20,
+                          20,  50,  60,  65,
+                          20,  55,  65,  70,
+                          20,  50,  65,  70,
+                          20,  55,  60,  65,
+                          10,  30,  50,  50,
+                          10,  30,  50,  55,
+                           0,  10,  20,  20,
 
-                        -20,-10,-10,-10,
-                        -10,  0,  0,  0,
-                        -10,  0,  5, 10,
-                        -10,  5,  5, 10,
-                        -10,  0, 10, 10,
-                        -10, 10, 10, 10,
-                        -10,  5,  0,  0,
-                        -20,-10,-10,-10,
+                         30,  40,  40,  45,
+                          40,  50,  50,  50,
+                          40,  50,  55,  60,
+                          40,  55,  55,  60,
+                          40,  50,  60,  60,
+                          40,  60,  60,  60,
+                          40,  55,  50,  50,
+                          30,  40,  40,  45,
 
-                         0,  0,  0,  0,
-                         5, 10, 10, 10,
-                         -5,  0,  0,  0,
-                         -5,  0,  0,  0,
-                         -5,  0,  0,  0,
-                         -5,  0,  0,  0,
-                         -5,  0,  0,  0,
-                          0,  0,  0,  5,
+                          0,   0,   0,   0,
+                         55,  60,  60,  60,
+                         45,  50,  50,  50,
+                         45,  50,  50,  50,
+                         45,  50,  50,  50,
+                         45,  50,  50,  50,
+                         45,  50,  50,  50,
+                          0,   0,   0,  55,
 
-                         -20,-10,-10,-5,
-                          -10,  0,  0,  0,
-                          -10,  0,  5,  5,
-                           -5,  0,  5,  5,
-                            0,  0,  5,  5,
-                          -10,  5,  5,  5,
-                          -10,  0,  5,  0,
-                          -20,-10,-10, -5,
+                         30,  40,  40,  45,
+                          40,  50,  50,  50,
+                          40,  50,  55,  55,
+                          45,  50,  55,  55,
+                          50,  50,  55,  55,
+                          40,  55,  55,  55,
+                          40,  50,  55,  50,
+                         30,  40,  40,  45,
 
-                        -30,-40,-40,-50,
-                        -30,-40,-40,-50,
-                        -30,-40,-40,-50,
-                        -30,-40,-40,-50,
-                        -20,-30,-30,-40,
-                        -10,-20,-20,-20,
-                         20, 20,  0,  0,
-                         20, 30, 10,  0 };
+                         20,  10,  10,   0,
+                          40,  30,  30,  30,
+                          40,  50,  55,  60,
+                          40,  55,  55,  60,
+                          40,  50,  60,  60,
+                          40,  60,  60,  60,
+                          40,  55,  50,  50,
+                         30,  20,  20,  15, };
 
     Move bestMove;
     //bool hasNotFinished;
@@ -141,12 +141,12 @@ public class MyBot : IChessBot
 
                     control[p.IsWhite ? 0 : 1] |= BitboardHelper.GetPieceAttacks(p.PieceType, p.Square, board, p.IsWhite);
 
-                    currentEval += (pieceValues[(int)p.PieceType] * 0.26f + tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] * pieceValues[(int)p.PieceType] * (1 - endGameCoef) * 0.0003f + (p.PieceType == PieceType.King ? -(Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * endGameCoef * 0.95f : 0)) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1);
+                    currentEval += (pieceValues[(int)p.PieceType] * 0.26f + (tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] - 50) * pieceValues[(int)p.PieceType] * (1 - endGameCoef) * 0.0003f + (p.PieceType == PieceType.King ? -(Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3)) * endGameCoef * endGameCoef * 0.95f : 0)) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1);
 
                 }
             }
 
-            currentEval += ((BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * 3.7f + ((hasCastled >> 1) - (hasCastled % 2)) * 5.3f  ) * (board.IsWhiteToMove ? 1 : -1);
+            currentEval += ((BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * 3.7f + ((hasCastled >> 1) - (hasCastled % 2)) * 20f  ) * (board.IsWhiteToMove ? 1 : -1);
             currentEval *= 0.01f;
 
             if (currentEval >= beta)
