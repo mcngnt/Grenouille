@@ -2,8 +2,14 @@
 using System;
 using System.Collections.Generic;
 
+
+
 public class MyBot : IChessBot
 {
+
+    private record struct TTEntry(ulong hash, Move bestMove, int score, int depth, int flag);
+    private readonly TTEntry[] transpositionTable = new TTEntry[0x400000];
+
     // None, Pawn, Knight, Bishop, Rook, Queen, King
     int[] pieceValues = { 0, 100, 320, 330, 500, 900, 20000 };
 
@@ -64,10 +70,13 @@ public class MyBot : IChessBot
     Move bestMove;
     HashSet<Move>[] killerMoves;
     int maxTime = 100;
+    Board board;
+    Timer timer;
 
-    public Move Think(Board board, Timer timer)
+    public Move Think(Board newBoard, Timer newTimer)
     {
-
+        board = newBoard;
+        timer = newTimer;
         int castleMask = 0;
         bool sideMoving = board.IsWhiteToMove;
 
@@ -88,28 +97,38 @@ public class MyBot : IChessBot
         for (int i = 1; i <= 60; i++)
         {
             killerMoves[i] = new HashSet<Move>();
-            Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false, castleMask);
+            Search(float.NegativeInfinity, float.PositiveInfinity, i, 0, castleMask);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
             }
+            Console.WriteLine(i);
         }
 
         return bestMove;
     }
 
     /* Has Castled :  00 | 01 | 10 | 11  -> Back | White */
-    public float Search(Board board, float alpha, float beta, int depth, int startingDepth, Timer timer, bool isQuiescence, int hasCastled)
+    public float Search(float alpha, float beta, int depth, int plyFromRoot, int hasCastled)
     {
+        ref TTEntry entry = ref transpositionTable[board.ZobristKey & 0x3FFFFF];
+        int flag = entry.flag;
 
-        if (!isQuiescence)
+        if (entry.hash == board.ZobristKey && depth > 0 && entry.depth >= depth && (flag == 1 || flag == 2 && entry.score <= alpha || flag == 3 && entry.score >= beta))
         {
-            if (depth == 0)
+            return entry.score;
+        }
+
+        float startingAlpha = alpha;
+
+        if (depth > 0)
+        {
+            if(timer.MillisecondsElapsedThisTurn > maxTime)
             {
-                return Search(board, alpha, beta, 0, startingDepth, timer, true, hasCastled);
+                return 999999;
             }
 
-            if (board.IsDraw() || timer.MillisecondsElapsedThisTurn > maxTime)
+            if (board.IsDraw())
             {
                 return 0;
             }
@@ -118,7 +137,6 @@ public class MyBot : IChessBot
             {
                 return -1000;
             }
-
 
         }
         else
@@ -157,11 +175,11 @@ public class MyBot : IChessBot
         }
 
 
-        Move[] moves = board.GetLegalMoves(isQuiescence);
+        Move[] moves = board.GetLegalMoves(depth > 0);
 
         float score(Move move)
         {
-            return (move.Equals(bestMove) ? 99999 : 0) + (!isQuiescence && killerMoves[depth].Contains(move) ? 9999 : 0) + (move.IsPromotion | move.IsCastles ? 900 : 0) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
+            return (move.Equals(bestMove) ? 99999 : 0) + (depth > 0 && killerMoves[depth].Contains(move) ? 9999 : 0) + (move.IsPromotion | move.IsCastles ? 900 : 0) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
         }
 
         int comp(Move move1, Move move2)
@@ -175,13 +193,14 @@ public class MyBot : IChessBot
         foreach (var move in moves)
         {
             board.MakeMove(move);
-            int extension = board.IsInCheck() ? 1 : 0;
-            float eval = -Search(board, -beta, -alpha, depth - 1 + extension, startingDepth + extension, timer, isQuiescence, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0));
+            if (board.IsInCheck())
+                depth++;
+            float eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0));
             board.UndoMove(move);
 
             if (eval >= beta)
             {
-                if (!isQuiescence)
+                if (depth > 0)
                 {
                     killerMoves[depth].Add(move);
                 }
@@ -190,12 +209,19 @@ public class MyBot : IChessBot
             if (eval > alpha)
             {
                 alpha = eval;
-                if (depth == startingDepth && timer.MillisecondsElapsedThisTurn < maxTime)
+                if (plyFromRoot == 0 && timer.MillisecondsElapsedThisTurn < maxTime)
                 {
                     bestMove = move;
                 }
             }
         }
+
+        entry = new(
+                board.ZobristKey,
+                bestMove,
+                (int)alpha,
+                depth,
+                alpha >= beta ? 3 : alpha <= startingAlpha ? 2 : 1);
 
         return alpha;
 
