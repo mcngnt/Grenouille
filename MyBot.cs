@@ -78,17 +78,6 @@ public class MyBot : IChessBot
     {
         board = newBoard;
         timer = newTimer;
-        int castleMask = 0;
-        bool sideMoving = board.IsWhiteToMove;
-
-        foreach (Move move in board.GameMoveHistory)
-        {
-            if (move.IsCastles)
-            {
-                sideMoving = !sideMoving;
-                castleMask |= (sideMoving ? 1 : 2);
-            }
-        }
 
         maxTime = timer.MillisecondsRemaining / 30;
 
@@ -96,7 +85,7 @@ public class MyBot : IChessBot
         for (int i = 1; i <= 60; i++)
         {
             nodes = 0;
-            int eval = Search(-999999, 999999, i, 0, castleMask, true);
+            int eval = Search(-999999, 999999, i, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
@@ -107,8 +96,7 @@ public class MyBot : IChessBot
         return bestMove;
     }
 
-    /* Has Castled :  00 | 01 | 10 | 11  -> Back | White */
-    public int Search(int alpha, int beta, int depth, int plyFromRoot, int hasCastled, bool canNull)
+    public int Search(int alpha, int beta, int depth, int plyFromRoot, bool canNull)
     {
         nodes++;
         //Console.WriteLine("Ply : " + plyFromRoot + " Depth : " + depth);
@@ -139,10 +127,10 @@ public class MyBot : IChessBot
                 return -10000;
             }
 
-            if (!board.IsInCheck() && canNull && depth >= 2)
+            if (!board.IsInCheck() && canNull && depth >= 3)
             {
                 board.TrySkipTurn();
-                int eval = -Search(-beta, -alpha, 3 + depth / 5, plyFromRoot + 1, hasCastled, false);
+                int eval = -Search(-beta, -alpha, depth - 3, plyFromRoot + 1, false);
                 board.UndoSkipTurn();
 
                 if (eval >= beta)
@@ -211,11 +199,15 @@ public class MyBot : IChessBot
         }
         scores.Sort(moves);
 
+        if (board.IsInCheck())
+        {
+            depth++;
+        }
 
         foreach (var move in moves)
         {
             board.MakeMove(move);
-            int eval = -Search(-beta, -alpha, depth - 1 + (board.IsInCheck() ? 1 : 0), plyFromRoot + 1, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0), canNull);
+            int eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, canNull);
             board.UndoMove(move);
 
             if (eval >= beta)
@@ -228,18 +220,18 @@ public class MyBot : IChessBot
             }
             if (eval > alpha)
             {
-                alpha = eval;
-                if (plyFromRoot == 0 && timer.MillisecondsElapsedThisTurn < maxTime)
+                if (plyFromRoot == 0)
                 {
                     bestMove = move;
                 }
+                alpha = eval;
             }
         }
 
         entry = new(
                 board.ZobristKey,
                 bestMove,
-                (int)alpha,
+                alpha,
                 depth,
                 alpha >= beta ? 3 : alpha <= startingAlpha ? 2 : 1);
 
