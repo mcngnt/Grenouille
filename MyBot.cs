@@ -72,6 +72,7 @@ public class MyBot : IChessBot
     int maxTime = 100;
     Board board;
     Timer timer;
+    int nodes;
 
     public Move Think(Board newBoard, Timer newTimer)
     {
@@ -94,12 +95,13 @@ public class MyBot : IChessBot
 
         for (int i = 1; i <= 60; i++)
         {
-            Search(-999999, 999999, i, 0, castleMask, true);
+            nodes = 0;
+            int eval = Search(-999999, 999999, i, 0, castleMask, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
             }
-            Console.WriteLine(i);
+            Console.WriteLine("Depth : " + i + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes);
         }
 
         return bestMove;
@@ -108,6 +110,7 @@ public class MyBot : IChessBot
     /* Has Castled :  00 | 01 | 10 | 11  -> Back | White */
     public int Search(int alpha, int beta, int depth, int plyFromRoot, int hasCastled, bool canNull)
     {
+        nodes++;
         //Console.WriteLine("Ply : " + plyFromRoot + " Depth : " + depth);
         ref TTEntry entry = ref transpositionTable[board.ZobristKey & 0x3FFFFF];
         int flag = entry.flag;
@@ -198,19 +201,15 @@ public class MyBot : IChessBot
         }
 
 
-        Move[] moves = board.GetLegalMoves(depth <= 0);
-
-        float score(Move move)
+        Span<Move> moves = stackalloc Move[218];
+        board.GetLegalMovesNonAlloc(ref moves, depth <= 0 && !board.IsInCheck());
+        Span<int> scores = stackalloc int[moves.Length];
+        int movesScoreIter = 0;
+        foreach (Move move in moves)
         {
-            return (move.Equals(bestMove) ? 99999 : 0) + (depth > 0 && killerMoves[plyFromRoot] == move ? 9999 : 0) + (move.IsPromotion | move.IsCastles ? 900 : 0) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
+            scores[movesScoreIter++] = -(entry.bestMove == move ? 999999 : move.IsCapture ? 99999 * (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : killerMoves[plyFromRoot] == move ? 9999 : 0);
         }
-
-        int comp(Move move1, Move move2)
-        {
-            return -score(move1).CompareTo(score(move2));
-        }
-
-        Array.Sort(moves, comp);
+        scores.Sort(moves);
 
 
         foreach (var move in moves)
