@@ -67,7 +67,7 @@ public class MyBot : IChessBot
                           40,  55,  50,  50,
                          30,  20,  20,  15, };
 
-    Move bestMove;
+    Move rootMove;
     Move[] killerMoves = new Move[100];
     int maxTime = 100;
     Board board;
@@ -76,6 +76,8 @@ public class MyBot : IChessBot
 
     public Move Think(Board newBoard, Timer newTimer)
     {
+        Console.WriteLine();
+
         board = newBoard;
         timer = newTimer;
 
@@ -93,7 +95,7 @@ public class MyBot : IChessBot
             Console.WriteLine("Depth : " + i + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes);
         }
 
-        return bestMove;
+        return rootMove;
     }
 
     public int Search(int alpha, int beta, int depth, int plyFromRoot, bool canNull)
@@ -204,6 +206,8 @@ public class MyBot : IChessBot
             depth++;
         }
 
+        Move bestMove = Move.NullMove;
+
         foreach (var move in moves)
         {
             board.MakeMove(move);
@@ -220,9 +224,10 @@ public class MyBot : IChessBot
             }
             if (eval > alpha)
             {
+                bestMove = move;
                 if (plyFromRoot == 0)
                 {
-                    bestMove = move;
+                    rootMove = move;
                 }
                 alpha = eval;
             }
