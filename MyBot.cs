@@ -72,43 +72,41 @@ public class MyBot : IChessBot
     int maxTime = 100;
     Board board;
     Timer timer;
+    int nodes;
 
     public Move Think(Board newBoard, Timer newTimer)
     {
         board = newBoard;
         timer = newTimer;
-        int castleMask = 0;
-        bool sideMoving = board.IsWhiteToMove;
 
-        foreach (Move move in board.GameMoveHistory)
-        {
-            if (move.IsCastles)
-            {
-                sideMoving = !sideMoving;
-                castleMask |= (sideMoving ? 1 : 2);
-            }
-        }
 
         maxTime = timer.MillisecondsRemaining / 30;
+
+        
 
 
         for (int i = 1; i <= 60; i++)
         {
-            Search(-999999, 999999, i, 0, castleMask, true);
+            nodes = 0;
+            float eval = Search(-999999, 999999, i, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
             }
-            Console.WriteLine(i);
+            Console.WriteLine("Depth : " + i + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes);
         }
 
         return bestMove;
     }
 
-    /* Has Castled :  00 | 01 | 10 | 11  -> Back | White */
-    public int Search(int alpha, int beta,   int depth, int plyFromRoot, int hasCastled, bool canNull)
+    public int Search(int alpha, int beta, int depth, int plyFromRoot, bool canNull)
     {
+        nodes++;
+
+
         //Console.WriteLine("Ply : " + plyFromRoot + " Depth : " + depth);
+
+
         ref TTEntry entry = ref transpositionTable[board.ZobristKey & 0x3FFFFF];
         int flag = entry.flag;
 
@@ -136,10 +134,10 @@ public class MyBot : IChessBot
                 return -10000;
             }
 
-            if (!board.IsInCheck() && canNull && depth >= 2)
+            if (!board.IsInCheck() && canNull && depth >= 3)
             {
                 board.TrySkipTurn();
-                int eval = -Search(-beta, -alpha, 3 + depth / 5, plyFromRoot + 1, hasCastled, false);
+                int eval = -Search(-beta, -alpha, depth - 3, plyFromRoot + 1, false);
                 board.UndoSkipTurn();
 
                 if (eval >= beta)
@@ -151,29 +149,7 @@ public class MyBot : IChessBot
         }
         else
         {
-            /*float currentEval = (board.IsInCheck() ? -8.8f : 0);
-
-            float endGameCoef = 1 - (BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard | board.BlackPiecesBitboard) / 32);
-
-            ulong[] control = new ulong[2];
-
-
-            foreach (PieceList plist in board.GetAllPieceLists())
-            {
-                for (int i = 0; i < plist.Count; i++)
-                {
-                    Piece p = plist.GetPiece(i);
-
-                    control[p.IsWhite ? 0 : 1] |= BitboardHelper.GetPieceAttacks(p.PieceType, p.Square, board, p.IsWhite);
-
-                    currentEval += (pieceValues[(int)p.PieceType] * 0.26f + (tables[((int)p.PieceType - 1) * 32 + (p.Square.File >= 4 ? 7 - p.Square.File : p.Square.File) + 4 * (p.IsWhite ? 7 - p.Square.Rank : p.Square.Rank)] - 50) * (1 - endGameCoef) * 0.06f - (p.PieceType == PieceType.King ? Math.Abs(p.Square.File - 3) + Math.Abs(p.Square.Rank - 3) * endGameCoef * endGameCoef * 0.95f : 0)) * (board.IsWhiteToMove == p.IsWhite ? 1 : -1);
-
-                }
-            }
-
-            currentEval += ((BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * 3.7f + ((hasCastled >> 1) - (hasCastled % 2)) * 20f) * (board.IsWhiteToMove ? 1 : -1);
-            currentEval *= 0.01f;*/
-
+         
             int currentEval = 0;
 
             foreach (PieceList plist in board.GetAllPieceLists())
@@ -198,11 +174,11 @@ public class MyBot : IChessBot
         }
 
 
-        Move[] moves = board.GetLegalMoves(depth <= 0);
+        /*Move[] moves = board.GetLegalMoves(depth <= 0);
 
         float score(Move move)
         {
-            return (move.Equals(bestMove) ? 99999 : 0) + (depth > 0 && killerMoves[plyFromRoot] == move ? 9999 : 0) + (move.IsPromotion | move.IsCastles ? 900 : 0) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
+            return (bestMove == move ? 99999 : 0) + (depth > 0 && killerMoves[plyFromRoot] == move ? 9999 : 0) + (move.IsPromotion ? 900 : 0) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
         }
 
         int comp(Move move1, Move move2)
@@ -212,12 +188,25 @@ public class MyBot : IChessBot
 
         Array.Sort(moves, comp);
 
+*/
+        Span<Move> moves = stackalloc Move[218];
+        board.GetLegalMovesNonAlloc(ref moves, depth > 0 && !board.IsInCheck());
+        Span<int> scores = stackalloc int[moves.Length];
+        int movesScoreIter = 0;
+        foreach (Move move in moves)
+        {
+            scores[movesScoreIter++] = -(entry.bestMove == move ? 999999 : move.IsCapture ? 99999 * (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : killerMoves[plyFromRoot] == move ? 9999 : 0);
+        }
+        scores.Sort(moves);
 
-        foreach (var move in moves)
+
+
+        foreach (Move move in moves)
         {
             board.MakeMove(move);
-            int eval = -Search(-beta, -alpha, depth - 1 + (board.IsInCheck() ? 1 : 0), plyFromRoot + 1, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0), canNull);
+            int eval = -Search(-beta, -alpha, depth - 1 + (board.IsInCheck() ? 1 : 0), plyFromRoot + 1, canNull);
             board.UndoMove(move);
+
 
             if (eval >= beta)
             {
