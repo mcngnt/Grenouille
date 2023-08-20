@@ -85,7 +85,7 @@ public class MyBot : IChessBot
 
         killerMoves = new HashSet<Move>[62];
 
-        maxTime = timer.MillisecondsRemaining / 30;
+        //maxTime = timer.MillisecondsRemaining / 30;
 
 
         for (int i = 1; i <= 60; i++)
