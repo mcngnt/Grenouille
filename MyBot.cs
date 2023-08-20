@@ -6,6 +6,8 @@ using System.Linq;
 
 public class MyBot : IChessBot
 {
+    private record struct TTEntry(ulong hash, Move bestMove, float score, int depth, int flag);
+    private readonly TTEntry[] transpositionTable = new TTEntry[0x400000];
 
     // None, Pawn, Knight, Bishop, Rook, Queen, King
     int[] pieceValues = { 0, 100, 320, 330, 500, 900, 20000 };
@@ -64,7 +66,7 @@ public class MyBot : IChessBot
                           40,  55,  50,  50,
                          30,  20,  20,  15, };
 
-    Move bestMove;
+    Move rootMove;
     HashSet<Move>[] killerMoves;
     int maxTime = 100;
     Board board;
@@ -97,12 +99,22 @@ public class MyBot : IChessBot
             Console.WriteLine("Depth : " + i + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes);
         }
 
-        return bestMove;
+        return rootMove;
     }
 
     public float Search(float alpha, float beta, int depth, int plyFromRoot, bool isQuiescence)
     {
         nodes++;
+        ref TTEntry entry = ref transpositionTable[board.ZobristKey & 0x3FFFFF];
+        int flag = entry.flag;
+
+        /*if (entry.hash == board.ZobristKey && plyFromRoot > 0 && entry.depth >= depth && (flag == 1 || flag == 2 && entry.score <= alpha || flag == 3 && entry.score >= beta))
+        {
+            return entry.score;
+        }*/
+
+        float startingAlpha = alpha;
+
         if (!isQuiescence)
         {
             if (depth == 0)
@@ -110,9 +122,14 @@ public class MyBot : IChessBot
                 return Search(alpha, beta, 0, plyFromRoot + 1, true);
             }
 
-            if (board.IsDraw() || timer.MillisecondsElapsedThisTurn > maxTime)
+            if (board.IsDraw())
             {
                 return 0;
+            }
+
+            if (timer.MillisecondsElapsedThisTurn > maxTime)
+            {
+                return 9999999;
             }
 
             if (board.IsInCheckmate())
@@ -161,7 +178,7 @@ public class MyBot : IChessBot
 
         float score(Move move)
         {
-            return (move.Equals(bestMove) ? 99999 : 0) + (!isQuiescence && killerMoves[plyFromRoot].Contains(move) ? 9999 : 0) + (move.IsPromotion | move.IsCastles ? 900 : 0) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
+            return (move.Equals(rootMove) ? 99999 : 0) + (!isQuiescence && killerMoves[plyFromRoot].Contains(move) ? 9999 : 0) + (move.IsPromotion | move.IsCastles ? 900 : 0) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
         }
 
         int comp(Move move1, Move move2)
@@ -171,6 +188,7 @@ public class MyBot : IChessBot
 
         Array.Sort(moves, comp);
 
+        Move bestMove = Move.NullMove;
 
         foreach (var move in moves)
         {
@@ -189,13 +207,21 @@ public class MyBot : IChessBot
             }
             if (eval > alpha)
             {
+                bestMove = move;
                 alpha = eval;
                 if (plyFromRoot == 0 && timer.MillisecondsElapsedThisTurn < maxTime)
                 {
-                    bestMove = move;
+                    rootMove = move;
                 }
             }
         }
+
+        entry = new(
+                board.ZobristKey,
+                bestMove,
+                alpha,
+                depth,
+                alpha >= beta ? 3 : alpha <= startingAlpha ? 2 : 1);
 
         return alpha;
     }
