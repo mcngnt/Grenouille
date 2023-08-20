@@ -69,6 +69,7 @@ public class MyBot : IChessBot
     int maxTime = 100;
     Board board;
     Timer timer;
+    int nodes;
 
     public Move Think(Board newBoard, Timer newTimer)
     {
@@ -99,11 +100,13 @@ public class MyBot : IChessBot
 
         for (int i = 1; i <= 60; i++)
         {
-            Search(float.NegativeInfinity, float.PositiveInfinity, i, 0, false, castleMask);
+            nodes = 0;
+            float eval = Search(float.NegativeInfinity, float.PositiveInfinity, i, 0, false, castleMask);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
             }
+            Console.WriteLine("Depth : " + i + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes);
         }
 
         return bestMove;
@@ -112,7 +115,7 @@ public class MyBot : IChessBot
     /* Has Castled :  00 | 01 | 10 | 11  -> Back | White */
     public float Search(float alpha, float beta, int depth, int plyFromRoot, bool isQuiescence, int hasCastled)
     {
-
+        nodes++;
         if (!isQuiescence)
         {
             if (depth == 0)
@@ -155,7 +158,6 @@ public class MyBot : IChessBot
             }
 
             currentEval += ((BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * 3.7f + ((hasCastled >> 1) - (hasCastled % 2)) * 20f) * (board.IsWhiteToMove ? 1 : -1);
-            currentEval *= 0.01f;
 
             if (currentEval >= beta)
             {
