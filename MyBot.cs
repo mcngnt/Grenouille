@@ -89,13 +89,17 @@ public class MyBot : IChessBot
 
         killerMoves = new HashSet<Move>[62];
 
+        for (int i = 0; i < 62; i++)
+        {
+            killerMoves[i] = new HashSet<Move>();
+        }
+
         //maxTime = timer.MillisecondsRemaining / 30;
 
 
         for (int i = 1; i <= 60; i++)
         {
-            killerMoves[i] = new HashSet<Move>();
-            Search(float.NegativeInfinity, float.PositiveInfinity, i, i, false, castleMask);
+            Search(float.NegativeInfinity, float.PositiveInfinity, i, 0, false, castleMask);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
@@ -106,14 +110,14 @@ public class MyBot : IChessBot
     }
 
     /* Has Castled :  00 | 01 | 10 | 11  -> Back | White */
-    public float Search(float alpha, float beta, int depth, int startingDepth, bool isQuiescence, int hasCastled)
+    public float Search(float alpha, float beta, int depth, int plyFromRoot, bool isQuiescence, int hasCastled)
     {
 
         if (!isQuiescence)
         {
             if (depth == 0)
             {
-                return Search(alpha, beta, 0, startingDepth, true, hasCastled);
+                return Search(alpha, beta, 0, plyFromRoot + 1, true, hasCastled);
             }
 
             if (board.IsDraw() || timer.MillisecondsElapsedThisTurn > maxTime)
@@ -168,7 +172,7 @@ public class MyBot : IChessBot
 
         float score(Move move)
         {
-            return (move.Equals(bestMove) ? 99999 : 0) + (!isQuiescence && killerMoves[depth].Contains(move) ? 9999 : 0) + (move.IsPromotion | move.IsCastles ? 900 : 0) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
+            return (move.Equals(bestMove) ? 99999 : 0) + (!isQuiescence && killerMoves[plyFromRoot].Contains(move) ? 9999 : 0) + (move.IsPromotion | move.IsCastles ? 900 : 0) + (move.IsCapture ? (pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType] - pieceValues[(int)board.GetPiece(move.StartSquare).PieceType]) : 0);
         }
 
         int comp(Move move1, Move move2)
@@ -183,21 +187,21 @@ public class MyBot : IChessBot
         {
             board.MakeMove(move);
             int extension = board.IsInCheck() ? 1 : 0;
-            float eval = -Search(-beta, -alpha, depth - 1 + extension, startingDepth + extension, isQuiescence, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0));
+            float eval = -Search(-beta, -alpha, depth - 1 + extension, plyFromRoot + 1, isQuiescence, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0));
             board.UndoMove(move);
 
             if (eval >= beta)
             {
                 if (!isQuiescence)
                 {
-                    killerMoves[depth].Add(move);
+                    killerMoves[plyFromRoot].Add(move);
                 }
                 return beta;
             }
             if (eval > alpha)
             {
                 alpha = eval;
-                if (depth == startingDepth && timer.MillisecondsElapsedThisTurn < maxTime)
+                if (plyFromRoot == 0 && timer.MillisecondsElapsedThisTurn < maxTime)
                 {
                     bestMove = move;
                 }
