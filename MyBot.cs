@@ -108,8 +108,9 @@ public class MyBot : IChessBot
         ref TTEntry entry = ref transpositionTable[board.ZobristKey & 0x3FFFFF];
         int flag = entry.flag;
 
-        /*if (entry.hash == board.ZobristKey && plyFromRoot > 0 && entry.depth >= depth && (flag == 1 || flag == 2 && entry.score <= alpha || flag == 3 && entry.score >= beta))
+        /*if (entry.hash == board.ZobristKey && plyFromRoot > 0 && entry.depth >= depth && (flag == 1 || (flag == 2 && entry.score <= alpha) || (flag == 3 && entry.score >= beta)))
         {
+            Console.WriteLine(entry.score);
             return entry.score;
         }*/
 
@@ -189,12 +190,15 @@ public class MyBot : IChessBot
         Array.Sort(moves, comp);
 
         Move bestMove = Move.NullMove;
+        if (board.IsInCheck())
+        {
+            depth++;
+        }
 
         foreach (var move in moves)
         {
             board.MakeMove(move);
-            int extension = board.IsInCheck() ? 1 : 0;
-            float eval = -Search(-beta, -alpha, depth - 1 + extension, plyFromRoot + 1, isQuiescence);
+            float eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, isQuiescence);
             board.UndoMove(move);
 
             if (eval >= beta)
@@ -216,12 +220,15 @@ public class MyBot : IChessBot
             }
         }
 
-        entry = new(
+        if (!isQuiescence)
+        {
+            entry = new(
                 board.ZobristKey,
                 bestMove,
                 alpha,
                 depth,
                 alpha >= beta ? 3 : alpha <= startingAlpha ? 2 : 1);
+        }
 
         return alpha;
     }
