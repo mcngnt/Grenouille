@@ -67,9 +67,13 @@ public class MyBot : IChessBot
     Move bestMove;
     HashSet<Move>[] killerMoves;
     int maxTime = 100;
+    Board board;
+    Timer timer;
 
-    public Move Think(Board board, Timer timer)
+    public Move Think(Board newBoard, Timer newTimer)
     {
+        board = newBoard;
+        timer = newTimer;
 
         int castleMask = 0;
         bool sideMoving = board.IsWhiteToMove;
@@ -91,7 +95,7 @@ public class MyBot : IChessBot
         for (int i = 1; i <= 60; i++)
         {
             killerMoves[i] = new HashSet<Move>();
-            Search(board, float.NegativeInfinity, float.PositiveInfinity, i, i, timer, false, castleMask);
+            Search(float.NegativeInfinity, float.PositiveInfinity, i, i, false, castleMask);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
@@ -102,14 +106,14 @@ public class MyBot : IChessBot
     }
 
     /* Has Castled :  00 | 01 | 10 | 11  -> Back | White */
-    public float Search(Board board, float alpha, float beta, int depth, int startingDepth, Timer timer, bool isQuiescence, int hasCastled)
+    public float Search(float alpha, float beta, int depth, int startingDepth, bool isQuiescence, int hasCastled)
     {
 
         if (!isQuiescence)
         {
             if (depth == 0)
             {
-                return Search(board, alpha, beta, 0, startingDepth, timer, true, hasCastled);
+                return Search(alpha, beta, 0, startingDepth, true, hasCastled);
             }
 
             if (board.IsDraw() || timer.MillisecondsElapsedThisTurn > maxTime)
@@ -179,7 +183,7 @@ public class MyBot : IChessBot
         {
             board.MakeMove(move);
             int extension = board.IsInCheck() ? 1 : 0;
-            float eval = -Search(board, -beta, -alpha, depth - 1 + extension, startingDepth + extension, timer, isQuiescence, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0));
+            float eval = -Search(-beta, -alpha, depth - 1 + extension, startingDepth + extension, isQuiescence, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0));
             board.UndoMove(move);
 
             if (eval >= beta)
