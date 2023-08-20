@@ -76,18 +76,6 @@ public class MyBot : IChessBot
         board = newBoard;
         timer = newTimer;
 
-        int castleMask = 0;
-        bool sideMoving = board.IsWhiteToMove;
-
-        foreach (Move move in board.GameMoveHistory)
-        {
-            if (move.IsCastles)
-            {
-                sideMoving = !sideMoving;
-                castleMask |= (sideMoving ? 1 : 2);
-            }
-        }
-
         killerMoves = new HashSet<Move>[62];
 
         for (int i = 0; i < 62; i++)
@@ -101,7 +89,7 @@ public class MyBot : IChessBot
         for (int i = 1; i <= 60; i++)
         {
             nodes = 0;
-            float eval = Search(float.NegativeInfinity, float.PositiveInfinity, i, 0, false, castleMask);
+            float eval = Search(float.NegativeInfinity, float.PositiveInfinity, i, 0, false);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
@@ -112,15 +100,14 @@ public class MyBot : IChessBot
         return bestMove;
     }
 
-    /* Has Castled :  00 | 01 | 10 | 11  -> Back | White */
-    public float Search(float alpha, float beta, int depth, int plyFromRoot, bool isQuiescence, int hasCastled)
+    public float Search(float alpha, float beta, int depth, int plyFromRoot, bool isQuiescence)
     {
         nodes++;
         if (!isQuiescence)
         {
             if (depth == 0)
             {
-                return Search(alpha, beta, 0, plyFromRoot + 1, true, hasCastled);
+                return Search(alpha, beta, 0, plyFromRoot + 1, true);
             }
 
             if (board.IsDraw() || timer.MillisecondsElapsedThisTurn > maxTime)
@@ -157,7 +144,7 @@ public class MyBot : IChessBot
                 }
             }
 
-            currentEval += ((BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * 3.7f + ((hasCastled >> 1) - (hasCastled % 2)) * 20f) * (board.IsWhiteToMove ? 1 : -1);
+            currentEval += (BitboardHelper.GetNumberOfSetBits(control[0]) - BitboardHelper.GetNumberOfSetBits(control[1])) * 3.7f * (board.IsWhiteToMove ? 1 : -1);
 
             if (currentEval >= beta)
             {
@@ -189,7 +176,7 @@ public class MyBot : IChessBot
         {
             board.MakeMove(move);
             int extension = board.IsInCheck() ? 1 : 0;
-            float eval = -Search(-beta, -alpha, depth - 1 + extension, plyFromRoot + 1, isQuiescence, hasCastled | (move.IsCastles ? (board.IsWhiteToMove ? 1 : 2) : 0));
+            float eval = -Search(-beta, -alpha, depth - 1 + extension, plyFromRoot + 1, isQuiescence);
             board.UndoMove(move);
 
             if (eval >= beta)
