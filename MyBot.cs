@@ -5,7 +5,7 @@ using System.Linq;
 
 public class MyBot : IChessBot
 {
-    record struct Entry(ulong zobristHash,int score, int depth,Move bestMove, int flag);
+    record struct Entry(ulong zobristHash, int score, int depth, Move bestMove, int flag);
     Entry[] transpositionTable = new Entry[4000000];
 
     Move rootMove;
@@ -136,7 +136,7 @@ public class MyBot : IChessBot
         for (int i = 1; i <= 60; i++)
         {
             nodes = 0;
-            int eval = Search(-999999, 999999, i, 0);
+            int eval = Search(-999999, 999999, i, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
@@ -149,7 +149,7 @@ public class MyBot : IChessBot
         return rootMove;
     }
 
-    public int Search(int alpha, int beta, int depth, int plyFromRoot)
+    public int Search(int alpha, int beta, int depth, int plyFromRoot, bool allowNullMove)
     {
         nodes++;
         bool isQuiescence = depth <= 0;
@@ -182,6 +182,21 @@ public class MyBot : IChessBot
                 return bestEval;
             }
         }
+        else
+        {
+            if (allowNullMove && isCheck && depth >= 3)
+            {
+                board.TrySkipTurn();
+                int eval = -Search(-beta, -alpha, depth - 3, plyFromRoot + 1, false);
+                board.UndoSkipTurn();
+
+                if (eval > beta)
+                {
+                    return beta;
+                }
+
+            }
+        }
 
         Span<Move> moves = stackalloc Move[218];
         board.GetLegalMovesNonAlloc(ref moves, isQuiescence && !isCheck);
@@ -206,7 +221,7 @@ public class MyBot : IChessBot
         foreach (Move move in moves)
         {
             board.MakeMove(move);
-            int eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1);
+            int eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
             board.UndoMove(move);
 
             if (eval > bestEval)
@@ -256,7 +271,7 @@ public class MyBot : IChessBot
         int endGame = 0;
         int gamePhase = 0;
 
-        for(int isWhite = 1; isWhite >= 0; --isWhite)
+        for (int isWhite = 1; isWhite >= 0; --isWhite)
         {
             for (int pieceID = 0; pieceID < 6; pieceID++)
             {
@@ -266,7 +281,7 @@ public class MyBot : IChessBot
                     int squareIndex = BitboardHelper.ClearAndGetIndexOfLSB(ref pieceMask);
                     if (isWhite > 0)
                     {
-                        squareIndex = (squareIndex % 8) + 8 * (7 - squareIndex/8);
+                        squareIndex = (squareIndex % 8) + 8 * (7 - squareIndex / 8);
                     }
 
                     /*if (test)
