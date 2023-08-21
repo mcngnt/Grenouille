@@ -9,7 +9,7 @@ public class MyBot : IChessBot
     Entry[] transpositionTable = new Entry[4000000];
 
     Move rootMove;
-    int maxTime = 300;
+    int maxTime = 100;
     Board board;
     Timer timer;
     int nodes;
@@ -17,6 +17,8 @@ public class MyBot : IChessBot
     int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
                           94, 281, 297, 512, 936, 0 };
     int[] piecePhaseValue = { 0, 1, 1, 2, 4, 0 };
+
+    Move[] killerMoves;
 
 
     int[,] pieceTable = { { 0,   0,   0,   0,   0,   0,  0,   0,
@@ -123,7 +125,10 @@ public class MyBot : IChessBot
         board = newBoard;
         timer = newTimer;
 
-        Console.WriteLine(Evaluate(true));
+        killerMoves = new Move[62];
+
+
+        //Console.WriteLine(Evaluate(true));
 
         //maxTime = timer.MillisecondsRemaining / 30;
 
@@ -192,7 +197,7 @@ public class MyBot : IChessBot
 
         foreach (Move move in moves)
         {
-            scores[scoreIter] = -(move == rootMove ? 1000000 : (move.IsCapture ? move.CapturePieceType - move.MovePieceType : 0) );
+            scores[scoreIter] = -(move == rootMove ? 1000000 : (killerMoves[plyFromRoot] == move ? 100000 : (move.IsCapture ? move.CapturePieceType - move.MovePieceType : 0)));
             scoreIter++;
         }
 
@@ -221,6 +226,10 @@ public class MyBot : IChessBot
 
                 if (alpha >= beta)
                 {
+                    if (!move.IsCapture)
+                    {
+                        killerMoves[plyFromRoot] = move;
+                    }
                     break;
                 }
 
