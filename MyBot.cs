@@ -101,7 +101,6 @@ public class MyBot : IChessBot
         
     }
 
-
     public Move Think(Board newBoard, Timer newTimer)
     {
         board = newBoard;
@@ -110,7 +109,7 @@ public class MyBot : IChessBot
         killerMoves = new Move[62];
 
 
-        //maxTime = timer.MillisecondsRemaining / 30;
+        maxTime = timer.MillisecondsRemaining / 30;
 
 
         for (int i = 1; i <= 60; i++)
@@ -121,7 +120,7 @@ public class MyBot : IChessBot
             {
                 break;
             }
-            Console.WriteLine("Depth : " + i + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
+            //Console.WriteLine("Depth : " + i + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
         }
         return rootMove;
     }
@@ -289,7 +288,5 @@ public class MyBot : IChessBot
         return (middleGame * gamePhase + endGame * (24 - gamePhase)) * (board.IsWhiteToMove ? 1 : -1);
 
     }
-
-
 
 }
