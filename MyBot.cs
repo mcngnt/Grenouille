@@ -184,10 +184,10 @@ public class MyBot : IChessBot
         }
         else
         {
-            if (allowNullMove && !isCheck && depth >= 3)
+            if (allowNullMove && !isCheck && depth >= 2)
             {
                 board.TrySkipTurn();
-                int eval = -Search(-beta, -beta + 1, depth - 3, plyFromRoot + 1, false);
+                int eval = -Search(-beta, -beta + 1, depth - 2, plyFromRoot + 1, false);
                 board.UndoSkipTurn();
 
                 if (eval > beta)
