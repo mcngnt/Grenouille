@@ -9,7 +9,7 @@ public class MyBot : IChessBot
     Entry[] transpositionTable = new Entry[4000000];
 
     Move rootMove;
-    int maxTime = 100;
+    int maxTime = 500;
     Board board;
     Timer timer;
     int nodes;
@@ -95,8 +95,8 @@ public class MyBot : IChessBot
             byte[] bytes = ((System.Numerics.BigInteger)packedPieceTable[square]).ToByteArray();
             for (int tableID = 0; tableID < 12; tableID++)
             {
-                pieceTable[tableID, square] = (int)Math.Round((sbyte)bytes[tableID] * 1.5);
-            }
+                pieceTable[tableID, square] = (int)Math.Round((sbyte)bytes[tableID] * 1.5) + pieceValues[tableID];
+    }
         }
         
     }
@@ -109,8 +109,6 @@ public class MyBot : IChessBot
 
         killerMoves = new Move[62];
 
-
-        //Console.WriteLine(Evaluate(true));
 
         //maxTime = timer.MillisecondsRemaining / 30;
 
@@ -125,9 +123,6 @@ public class MyBot : IChessBot
             }
             Console.WriteLine("Depth : " + i + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
         }
-
-        Console.WriteLine(rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
-
         return rootMove;
     }
 
@@ -196,16 +191,32 @@ public class MyBot : IChessBot
 
         foreach (Move move in moves)
         {
-            scores[scoreIter] = -(move == rootMove ? 1000000 : (killerMoves[plyFromRoot] == move ? 100000 : (move.IsCapture ? move.CapturePieceType - move.MovePieceType : 0)));
+            scores[scoreIter] = -(move == entry.bestMove ? 1000000 : (killerMoves[plyFromRoot] == move ? 100000 : (move.IsCapture ? move.CapturePieceType - move.MovePieceType : 0)));
             scoreIter++;
         }
 
         scores.Sort(moves);
 
+        int moveCount = 0;
+
         foreach (Move move in moves)
         {
             board.MakeMove(move);
-            int eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+            int eval = 0;
+            if (moveCount++ > 3 && depth > 2 && !isCheck && !move.IsCapture)
+            {
+                eval = -Search(-alpha - 1, -alpha, depth - 2, plyFromRoot + 1, allowNullMove);
+            }
+            else
+            {
+                eval = alpha + 1;
+            }
+
+            if(eval > alpha)
+            {
+                eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+            }
+
             board.UndoMove(move);
 
             if (eval > bestEval)
@@ -240,7 +251,6 @@ public class MyBot : IChessBot
             }
         }
 
-        // Thanks to  https://web.archive.org/web/20071031100051/http://www.brucemo.com/compchess/programming/hashing.htm
 
         entry = new(board.ZobristKey, bestEval, depth, bestMove, bestEval >= beta ? 3 : bestEval <= startingAlpha ? 2 : 1);
 
@@ -249,13 +259,13 @@ public class MyBot : IChessBot
     }
 
 
-    public int Evaluate(bool test = false)
+    public int Evaluate()
     {
         int middleGame = 0;
         int endGame = 0;
         int gamePhase = 0;
 
-        for (int isWhite = 1; isWhite >= 0; --isWhite)
+        for (int isWhite = 1; isWhite >= 0; middleGame = - middleGame, endGame = -endGame, --isWhite)
         {
             for (int pieceID = 0; pieceID < 6; pieceID++)
             {
@@ -268,15 +278,9 @@ public class MyBot : IChessBot
                         squareIndex = (squareIndex % 8) + 8 * (7 - squareIndex / 8);
                     }
 
-                    /*if (test)
-                    {
-                        Console.WriteLine("Piece type : " + (PieceType)(pieceID + 1) + " || Square : " + squareIndex + " || Color : " + isWhite);
-                        Console.WriteLine(middleGame);
-                    }*/
-
                     gamePhase += piecePhaseValue[pieceID];
-                    middleGame += (pieceTable[pieceID, squareIndex] + pieceValues[pieceID]) * (isWhite * 2 - 1);
-                    endGame += (pieceTable[pieceID + 6, squareIndex] + pieceValues[pieceID + 6]) * (isWhite * 2 - 1);
+                    middleGame += pieceTable[pieceID, squareIndex];
+                    endGame += pieceTable[pieceID + 6, squareIndex];
                 }
 
             }
