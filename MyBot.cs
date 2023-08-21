@@ -5,8 +5,11 @@ using System.Linq;
 
 public class MyBot : IChessBot
 {
+    record struct Entry(ulong zobristHash,int score, int depth,Move bestMove, int flag);
+    Entry[] transpositionTable = new Entry[4000000];
+
     Move rootMove;
-    int maxTime = 100;
+    int maxTime = 300;
     Board board;
     Timer timer;
     int nodes;
@@ -147,6 +150,14 @@ public class MyBot : IChessBot
         bool isCheck = board.IsInCheck();
         int bestEval = -999999;
         Move bestMove = Move.NullMove;
+        int startingAlpha = alpha;
+
+        ref Entry entry = ref transpositionTable[board.ZobristKey & 3999999];
+
+        if (plyFromRoot > 0 && entry.zobristHash == board.ZobristKey && entry.depth >= depth && (entry.flag == 1 || entry.flag == 2 && entry.score <= alpha || entry.flag == 3 && entry.score >= beta))
+        {
+            return entry.score;
+        }
 
         if (isCheck)
         {
@@ -219,6 +230,10 @@ public class MyBot : IChessBot
                 return 999999;
             }
         }
+
+        // Thanks to  https://web.archive.org/web/20071031100051/http://www.brucemo.com/compchess/programming/hashing.htm
+
+        entry = new(board.ZobristKey, bestEval, depth, bestMove, bestEval >= beta ? 3 : bestEval <= startingAlpha ? 2 : 1);
 
         return bestEval;
 
