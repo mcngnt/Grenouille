@@ -147,7 +147,7 @@ public class MyBot : IChessBot
             else
             {
                 if (moveCount++ > 3 && depth > 2 && !isCheck && !move.IsCapture)
-                    eval = -Search(-alpha - 1, -alpha, depth - 2, plyFromRoot + 1, allowNullMove);
+                    eval = -Search(-alpha - 1, -alpha, depth - 3, plyFromRoot + 1, allowNullMove);
                 else
                     eval = alpha + 1;
 
