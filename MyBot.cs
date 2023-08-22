@@ -12,7 +12,7 @@ public class MyBot : IChessBot
     int maxTime = 200;
     Board board;
     Timer timer;
-    //int nodes;
+    int nodes;
 
     int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
                           94, 281, 297, 512, 936, 0 };
@@ -51,18 +51,28 @@ public class MyBot : IChessBot
 
         historyHeuristicTable = new int[7, 64];
 
-        /*        int alpha = -999999;
-                int beta = 999999;*/
+        int alpha = -999999;
+        int beta = 999999;
 
-        for (int i = 1; i <= 97; i++)
+        for (int d = 1; d <= 90;)
         {
-            //nodes = 0;
-            Search(-999999, 999999, i, 0, true);
+            nodes = 0;
+            int eval = Search(alpha, beta, d, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 break;
-            /*            alpha = eval - 1000;
-                        beta = eval + 1000;*/
-            //Console.WriteLine("Depth : " + i + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
+
+            if (eval < alpha)
+                alpha -= 62;
+            else if (eval > beta)
+                beta += 62;
+            else
+            {
+                alpha = eval - 17;
+                beta = eval + 17;
+                d++;
+            }
+
+            Console.WriteLine("Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
         }
         return rootMove;
     }
@@ -71,7 +81,7 @@ public class MyBot : IChessBot
 
     public int Search(int alpha, int beta, int depth, int plyFromRoot, bool allowNullMove)
     {
-        //nodes++;
+        nodes++;
         bool isQuiescence = depth <= 0, isCheck = board.IsInCheck();
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0;
         Move bestMove = Move.NullMove;
