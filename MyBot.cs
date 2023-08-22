@@ -20,6 +20,8 @@ public class MyBot : IChessBot
 
     Move[,] killerMoves;
 
+    int[,] historyHeuristicTable;
+
 
     decimal[] packedPieceTable = {64365675561202951673254613248m,
                                   72128178712990387091628344576m,
@@ -111,6 +113,8 @@ public class MyBot : IChessBot
 
         killerMoves = new Move[99, 64];
 
+        historyHeuristicTable = new int[7, 64];
+
         int alpha = -999999;
         int beta = 999999;
 
@@ -199,7 +203,7 @@ public class MyBot : IChessBot
 
         foreach (Move move in moves)
         {
-            scores[scoreIter] = -(move == entry.bestMove ? 1000000 : (killerMoves[plyFromRoot,move.StartSquare.Index] == move ? 100000 : (move.IsCapture ? move.CapturePieceType - move.MovePieceType : 0)));
+            scores[scoreIter] = -(move == entry.bestMove ? 9000000 : move.IsCapture ? (move.CapturePieceType - move.MovePieceType) * 1000000 : killerMoves[plyFromRoot,move.StartSquare.Index] == move ? 1000000 : historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index]);
             scoreIter++;
         }
 
@@ -258,6 +262,7 @@ public class MyBot : IChessBot
                     if (!move.IsCapture)
                     {
                         killerMoves[plyFromRoot, move.StartSquare.Index] = move;
+                        historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
                     }
                     break;
                 }
