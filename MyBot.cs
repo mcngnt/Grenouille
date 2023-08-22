@@ -109,7 +109,7 @@ public class MyBot : IChessBot
         killerMoves = new Move[62];
 
 
-        //maxTime = timer.MillisecondsRemaining / 30;
+       // maxTime = timer.MillisecondsRemaining / 30;
 
         int alpha = -999999;
         int beta = 999999;
@@ -166,7 +166,7 @@ public class MyBot : IChessBot
         }
         else
         {
-            if (allowNullMove && !isCheck && depth >= 2)
+            if (allowNullMove && !isCheck && depth >= 2 && beta - alpha == 1)
             {
                 board.TrySkipTurn();
                 int eval = -Search(-beta, -beta + 1, depth - 2, plyFromRoot + 1, false);
@@ -298,7 +298,7 @@ public class MyBot : IChessBot
             }
         }
 
-        return (middleGame * gamePhase + endGame * (24 - gamePhase)) * (board.IsWhiteToMove ? 1 : -1);
+        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase/2;
 
     }
 
