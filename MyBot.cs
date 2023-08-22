@@ -102,15 +102,15 @@ public class MyBot : IChessBot
         }
         else if (!isCheck && beta - alpha == 1)
         {
-            int staticEval = Evaluate();
+            /*int staticEval = Evaluate();
 
             if (depth <= 10 && staticEval - 96 * depth >= beta)
-                return staticEval;
+                return staticEval;*/
 
             if (allowNullMove && depth >= 2)
             {
                 board.TrySkipTurn();
-                eval = -Search(-beta, -beta + 1, depth - 2, plyFromRoot + 1, false);
+                eval = -Search(-beta, -beta + 1, 3 + depth/5, plyFromRoot + 1, false);
                 board.UndoSkipTurn();
 
                 if (eval > beta)
