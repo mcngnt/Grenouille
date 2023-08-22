@@ -100,14 +100,21 @@ public class MyBot : IChessBot
             if (alpha >= beta)
                 return bestEval;
         }
-        else if (!isCheck && beta - alpha == 1)
+        else if (!isCheck && beta - alpha == 1 && allowNullMove && depth >= 2)
         {
             /*int staticEval = Evaluate();
 
             if (depth <= 10 && staticEval - 96 * depth >= beta)
                 return staticEval;*/
 
-            if (allowNullMove && depth >= 2)
+            board.TrySkipTurn();
+            eval = -Search(-beta, -beta + 1, 3 + depth / 5, plyFromRoot + 1, false);
+            board.UndoSkipTurn();
+
+            if (eval > beta)
+                return beta;
+
+            /*if (allowNullMove && depth >= 2)
             {
                 board.TrySkipTurn();
                 eval = -Search(-beta, -beta + 1, 3 + depth/5, plyFromRoot + 1, false);
@@ -116,7 +123,7 @@ public class MyBot : IChessBot
                 if (eval > beta)
                     return beta;
 
-            }
+            }*/
         }
 
         if (board.IsDraw())
