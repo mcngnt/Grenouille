@@ -51,15 +51,14 @@ public class MyBot : IChessBot
 
         historyHeuristicTable = new int[7, 64];
 
-        int alpha = -999999;
-        int beta = 999999;
-
-        for (int d = 1; d <= 90;)
+        for (int d = 2, alpha = -999999, beta = 999999;;)
         {
-            nodes = 0;
+            //nodes = 0;
             int eval = Search(alpha, beta, d, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 break;
+
+            //Console.WriteLine("Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
 
             if (eval <= alpha)
                 alpha -= 62;
@@ -72,7 +71,6 @@ public class MyBot : IChessBot
                 d++;
             }
 
-            Console.WriteLine("Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
         }
         return rootMove;
     }
@@ -81,7 +79,7 @@ public class MyBot : IChessBot
 
     public int Search(int alpha, int beta, int depth, int plyFromRoot, bool allowNullMove)
     {
-        nodes++;
+        //nodes++;
         bool isQuiescence = depth <= 0, isCheck = board.IsInCheck();
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0;
         Move bestMove = Move.NullMove;
@@ -122,13 +120,10 @@ public class MyBot : IChessBot
         }
 
         if (board.IsDraw())
-        {
             return 0;
-        }
+
         if (board.IsInCheckmate())
-        {
             return plyFromRoot - 999999;
-        }
 
         Span<Move> moves = stackalloc Move[218];
         board.GetLegalMovesNonAlloc(ref moves, isQuiescence && !isCheck);
