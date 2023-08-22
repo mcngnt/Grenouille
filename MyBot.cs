@@ -54,10 +54,10 @@ public class MyBot : IChessBot
         int alpha = -999999;
         int beta = 999999;
 
-        for (int i = 1; i <= 80; i++)
+        for (int d = 1; d <= 80;)
         {
             nodes = 0;
-            int eval = Search(alpha, beta, i, 0, true);
+            int eval = Search(alpha, beta, d, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 break;
 
@@ -69,6 +69,7 @@ public class MyBot : IChessBot
             {
                 alpha = eval - 17;
                 beta = eval + 17;
+                d++;
             }*/
 
 
@@ -106,12 +107,12 @@ public class MyBot : IChessBot
         }
         else if (!isCheck && beta - alpha == 1)
         {
-            int staticEval = Evaluate();
+            /*int staticEval = Evaluate();
 
             canPrune = depth < 8 && staticEval + 141 * depth <= alpha; // To change
 
             if (depth <= 10 && staticEval - 96 * depth >= beta) // To change
-                return staticEval;
+                return staticEval;*/
 
             if (allowNullMove && depth >= 2)
             {
@@ -153,8 +154,8 @@ public class MyBot : IChessBot
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 return 999999;
 
-            if (canPrune && moveCount > 3)
-                continue;
+/*            if (canPrune && moveCount > 3)
+                continue;*/
 
             board.MakeMove(move);
             if (moveCount++ == 0 || isQuiescence)
