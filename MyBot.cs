@@ -61,9 +61,9 @@ public class MyBot : IChessBot
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 break;
 
-            if (eval < alpha)
+            if (eval <= alpha)
                 alpha -= 62;
-            else if (eval > beta)
+            else if (eval >= beta)
                 beta += 62;
             else
             {
