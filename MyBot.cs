@@ -9,7 +9,7 @@ public class MyBot : IChessBot
     Entry[] transpositionTable = new Entry[4000000];
 
     Move rootMove;
-    int maxTime = 300;
+    int maxTime = 200;
     Board board;
     Timer timer;
     int nodes;
@@ -18,7 +18,8 @@ public class MyBot : IChessBot
                           94, 281, 297, 512, 936, 0 };
     int[] piecePhaseValue = { 0, 1, 1, 2, 4, 0 };
 
-    Move[] killerMoves;
+    Move[,] killerMoves;
+
 
     decimal[] packedPieceTable = {64365675561202951673254613248m,
                                   72128178712990387091628344576m,
@@ -106,15 +107,14 @@ public class MyBot : IChessBot
         board = newBoard;
         timer = newTimer;
 
-        killerMoves = new Move[62];
+        //maxTime = timer.MillisecondsRemaining / 30;
 
-
-       // maxTime = timer.MillisecondsRemaining / 30;
+        killerMoves = new Move[99, 64];
 
         int alpha = -999999;
         int beta = 999999;
 
-        for (int i = 1; i <= 60; i++)
+        for (int i = 1; i <= 97; i++)
         {
             nodes = 0;
             int eval = Search(alpha, beta, i, 0, true);
@@ -199,7 +199,7 @@ public class MyBot : IChessBot
 
         foreach (Move move in moves)
         {
-            scores[scoreIter] = -(move == entry.bestMove ? 1000000 : (killerMoves[plyFromRoot] == move ? 100000 : (move.IsCapture ? move.CapturePieceType - move.MovePieceType : 0)));
+            scores[scoreIter] = -(move == entry.bestMove ? 1000000 : (killerMoves[plyFromRoot,move.StartSquare.Index] == move ? 100000 : (move.IsCapture ? move.CapturePieceType - move.MovePieceType : 0)));
             scoreIter++;
         }
 
@@ -211,24 +211,31 @@ public class MyBot : IChessBot
         {
             board.MakeMove(move);
             int eval = 0;
-            if (moveCount++ > 3 && depth > 2 && !isCheck && !move.IsCapture && !isQuiescence)
+            if(moveCount++ == 0 || isQuiescence)
             {
-                eval = -Search(-alpha - 1, -alpha, depth - 2, plyFromRoot + 1, allowNullMove);
+                eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
             }
             else
             {
-                eval = alpha + 1;
-            }
+                if (moveCount++ > 3 && depth > 2 && !isCheck && !move.IsCapture)
+                {
+                    eval = -Search(-alpha - 1, -alpha, depth - 2, plyFromRoot + 1, allowNullMove);
+                }
+                else
+                {
+                    eval = alpha + 1;
+                }
 
-            if(eval > alpha)
-            {
-                eval = -Search(-alpha - 1, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
                 if (eval > alpha)
                 {
-                    eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+                    eval = -Search(-alpha - 1, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+                    if (eval > alpha)
+                    {
+                        eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+                    }
                 }
             }
-
+            
             board.UndoMove(move);
 
             if (eval > bestEval)
@@ -250,7 +257,7 @@ public class MyBot : IChessBot
                 {
                     if (!move.IsCapture)
                     {
-                        killerMoves[plyFromRoot] = move;
+                        killerMoves[plyFromRoot, move.StartSquare.Index] = move;
                     }
                     break;
                 }
