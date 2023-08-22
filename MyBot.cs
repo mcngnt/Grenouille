@@ -9,7 +9,7 @@ public class MyBot : IChessBot
     Entry[] transpositionTable = new Entry[4000000];
 
     Move rootMove;
-    int maxTime = 500;
+    int maxTime = 300;
     Board board;
     Timer timer;
     int nodes;
@@ -109,17 +109,21 @@ public class MyBot : IChessBot
         killerMoves = new Move[62];
 
 
-        maxTime = timer.MillisecondsRemaining / 30;
+        //maxTime = timer.MillisecondsRemaining / 30;
 
+        int alpha = -999999;
+        int beta = 999999;
 
         for (int i = 1; i <= 60; i++)
         {
             nodes = 0;
-            int eval = Search(-999999, 999999, i, 0, true);
+            int eval = Search(alpha, beta, i, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
             {
                 break;
             }
+/*            alpha = eval - 1000;
+            beta = eval + 1000;*/
             //Console.WriteLine("Depth : " + i + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
         }
         return rootMove;
@@ -176,15 +180,20 @@ public class MyBot : IChessBot
             }
         }
 
+        if (board.IsDraw())
+        {
+            return 0;
+        }
+        if (board.IsInCheckmate())
+        {
+            return plyFromRoot - 999999;
+        }
+
         Span<Move> moves = stackalloc Move[218];
         board.GetLegalMovesNonAlloc(ref moves, isQuiescence && !isCheck);
 
         Span<int> scores = stackalloc int[moves.Length];
 
-        if (!isQuiescence && moves.IsEmpty)
-        {
-            return isCheck ? plyFromRoot - 999999 : 0;
-        }
 
         int scoreIter = 0;
 
@@ -202,7 +211,7 @@ public class MyBot : IChessBot
         {
             board.MakeMove(move);
             int eval = 0;
-            if (moveCount++ > 3 && depth > 2 && !isCheck && !move.IsCapture)
+            if (moveCount++ > 3 && depth > 2 && !isCheck && !move.IsCapture && !isQuiescence)
             {
                 eval = -Search(-alpha - 1, -alpha, depth - 2, plyFromRoot + 1, allowNullMove);
             }
@@ -213,7 +222,11 @@ public class MyBot : IChessBot
 
             if(eval > alpha)
             {
-                eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+                eval = -Search(-alpha - 1, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+                if (eval > alpha)
+                {
+                    eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+                }
             }
 
             board.UndoMove(move);
