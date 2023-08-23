@@ -9,7 +9,7 @@ public class MyBot : IChessBot
     Entry[] transpositionTable = new Entry[4000000];
 
     Move rootMove;
-    int maxTime = 200;
+    int maxTime;
     Board board;
     Timer timer;
     int nodes;
@@ -18,7 +18,7 @@ public class MyBot : IChessBot
                           94, 281, 297, 512, 936, 0 };
     int[] piecePhaseValue = { 0, 1, 1, 2, 4, 0 };
 
-    Move[,] killerMoves;
+    Move[,] killerMoves = new Move[99, 64];
 
     int[,] historyHeuristicTable;
 
@@ -45,13 +45,12 @@ public class MyBot : IChessBot
         board = newBoard;
         timer = newTimer;
 
-        //maxTime = timer.MillisecondsRemaining / 30;
+        maxTime = timer.MillisecondsRemaining / 30;
 
-        killerMoves = new Move[99, 64];
 
         historyHeuristicTable = new int[7, 64];
 
-        for (int d = 2, alpha = -999999, beta = 999999;;)
+        for (int d = 2, alpha = -999999, beta = 999999; ;)
         {
             //nodes = 0;
             int eval = Search(alpha, beta, d, 0, true);
@@ -100,7 +99,7 @@ public class MyBot : IChessBot
             if (alpha >= beta)
                 return bestEval;
         }
-        else if (!isCheck && beta - alpha == 1 && allowNullMove && depth >= 2)
+        else if (!isCheck && beta - alpha == 1 && allowNullMove && depth > 2)
         {
             /*int staticEval = Evaluate();
 
@@ -108,7 +107,7 @@ public class MyBot : IChessBot
                 return staticEval;*/
 
             board.TrySkipTurn();
-            eval = -Search(-beta, -beta + 1, 3 + depth / 5, plyFromRoot + 1, false);
+            eval = -Search(-beta, -beta + 1, depth - 2, plyFromRoot + 1, false);
             board.UndoSkipTurn();
 
             if (eval > beta)
@@ -154,7 +153,7 @@ public class MyBot : IChessBot
             else
             {
                 if (moveCount++ > 3 && depth > 2 && !isCheck && !move.IsCapture)
-                    eval = -Search(-alpha - 1, -alpha, depth - 3, plyFromRoot + 1, allowNullMove);
+                    eval = -Search(-alpha - 1, -alpha, depth - 2, plyFromRoot + 1, allowNullMove);
                 else
                     eval = alpha + 1;
 
