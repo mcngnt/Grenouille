@@ -12,7 +12,7 @@ public class MyBot : IChessBot
     int maxTime = 100;
     Board board;
     Timer timer;
-    //int nodes;
+    int nodes;
 
     int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
                           94, 281, 297, 512, 936, 0 };
@@ -52,7 +52,7 @@ public class MyBot : IChessBot
 
         for (int d = 2, alpha = -999999, beta = 999999; ;)
         {
-            //nodes = 0;
+            nodes = 0;
             int eval = Search(alpha, beta, d, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 break;
@@ -78,7 +78,7 @@ public class MyBot : IChessBot
 
     public int Search(int alpha, int beta, int depth, int plyFromRoot, bool allowNullMove)
     {
-        //nodes++;
+        nodes++;
         bool isQuiescence = depth <= 0, isCheck = board.IsInCheck();
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0;
         Move bestMove = Move.NullMove;
@@ -107,7 +107,7 @@ public class MyBot : IChessBot
                 return staticEval;*/
 
             board.TrySkipTurn();
-            eval = -Search(-beta, -beta + 1, depth - 3, plyFromRoot + 1, false);
+            eval = -Search(-beta, -beta + 1, depth - 2, plyFromRoot + 1, false);
             board.UndoSkipTurn();
 
             if (eval > beta)
@@ -139,7 +139,7 @@ public class MyBot : IChessBot
 
         foreach (Move move in moves)
         {
-            scores[scoreIter++] = -(move == entry.bestMove ? 9000000 : move.IsCapture ? (move.CapturePieceType - move.MovePieceType) * 1000000 : killerMoves[plyFromRoot, move.StartSquare.Index] == move ? 1000000 : historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index]);
+            scores[scoreIter++] = -(move == entry.bestMove ? 9000000 : move.IsCapture ? 1000000 * (int)move.CapturePieceType - (int)move.MovePieceType : killerMoves[plyFromRoot, move.TargetSquare.Index] == move ? 900000 : historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index]);
         }
 
         scores.Sort(moves);
@@ -152,8 +152,8 @@ public class MyBot : IChessBot
                 eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
             else
             {
-                if (moveCount++ > 3 && depth > 2 && !isCheck && !move.IsCapture)
-                    eval = -Search(-alpha - 1, -alpha, depth - 2, plyFromRoot + 1, allowNullMove);
+                if (moveCount > 5 && depth > 2)
+                    eval = -Search(-alpha - 1, -alpha, depth - 3, plyFromRoot + 1, allowNullMove);
                 else
                     eval = alpha + 1;
 
@@ -182,7 +182,7 @@ public class MyBot : IChessBot
                 {
                     if (!move.IsCapture)
                     {
-                        killerMoves[plyFromRoot, move.StartSquare.Index] = move;
+                        killerMoves[plyFromRoot, move.TargetSquare.Index] = move;
                         historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
                     }
                     break;
