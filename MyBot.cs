@@ -9,10 +9,10 @@ public class MyBot : IChessBot
     Entry[] transpositionTable = new Entry[4000000];
 
     Move rootMove;
-    int maxTime;
+    int maxTime = 100;
     Board board;
     Timer timer;
-    int nodes;
+    //int nodes;
 
     int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
                           94, 281, 297, 512, 936, 0 };
@@ -45,7 +45,7 @@ public class MyBot : IChessBot
         board = newBoard;
         timer = newTimer;
 
-        maxTime = timer.MillisecondsRemaining / 30;
+        //maxTime = timer.MillisecondsRemaining / 30;
 
 
         historyHeuristicTable = new int[7, 64];
@@ -107,7 +107,7 @@ public class MyBot : IChessBot
                 return staticEval;*/
 
             board.TrySkipTurn();
-            eval = -Search(-beta, -beta + 1, depth - 2, plyFromRoot + 1, false);
+            eval = -Search(-beta, -beta + 1, depth - 3, plyFromRoot + 1, false);
             board.UndoSkipTurn();
 
             if (eval > beta)
@@ -216,7 +216,7 @@ public class MyBot : IChessBot
                     int squareIndex = BitboardHelper.ClearAndGetIndexOfLSB(ref pieceMask);
 
                     if (isWhite > 0)
-                        squareIndex = (squareIndex % 8) + 8 * (7 - squareIndex / 8);
+                        squareIndex ^= 56;
 
                     gamePhase += piecePhaseValue[pieceID];
                     middleGame += pieceTable[pieceID, squareIndex];
