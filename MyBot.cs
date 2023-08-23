@@ -82,7 +82,7 @@ public class MyBot : IChessBot
         nodes++;
         bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0;
-        Move bestMove = Move.NullMove;
+        Move bestMove = default;
 
         int LambdaSearch(int alphaBis, int R = 1) => eval = -Search(-alphaBis, -alpha, depth - R, plyFromRoot + 1, allowNullMove);
 
@@ -138,7 +138,7 @@ public class MyBot : IChessBot
         foreach (Move move in moves)
         {
 
-            if (canPrune && moveCount > 0 && !move.IsCapture && !move.IsPromotion)
+            if (canPrune && moveCount > 0 && !move.IsCapture)
                 continue;
 
 
@@ -194,7 +194,7 @@ public class MyBot : IChessBot
         }
 
 
-        entry = new(board.ZobristKey, bestEval, depth, bestMove == Move.NullMove ? entry.bestMove : bestMove, bestEval >= beta ? 3 : bestEval <= startingAlpha ? 2 : 1);
+        entry = new(board.ZobristKey, bestEval, depth, bestMove == default ? entry.bestMove : bestMove, bestEval >= beta ? 3 : bestEval <= startingAlpha ? 2 : 1);
 
         return bestEval;
 
