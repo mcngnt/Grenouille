@@ -9,10 +9,10 @@ public class MyBot : IChessBot
     Entry[] transpositionTable = new Entry[4000000];
 
     Move rootMove;
-    int maxTime = 100;
+    int maxTime;
     Board board;
     Timer timer;
-    int nodes;
+    //int nodes;
 
     int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
                           94, 281, 297, 512, 936, 0 };
@@ -45,14 +45,14 @@ public class MyBot : IChessBot
         board = newBoard;
         timer = newTimer;
 
-        //maxTime = timer.MillisecondsRemaining / 30;
+        maxTime = timer.MillisecondsRemaining / 30;
 
 
         historyHeuristicTable = new int[7, 64];
 
         for (int d = 2, alpha = -999999, beta = 999999; ;)
         {
-            nodes = 0;
+            //nodes = 0;
             int eval = Search(alpha, beta, d, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 break;
@@ -75,13 +75,14 @@ public class MyBot : IChessBot
     }
 
 
-
     public int Search(int alpha, int beta, int depth, int plyFromRoot, bool allowNullMove)
     {
-        nodes++;
-        bool isQuiescence = depth <= 0, isCheck = board.IsInCheck();
+        //nodes++;
+        bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0;
         Move bestMove = Move.NullMove;
+
+        int LambdaSearch(int alphaBis, int R = 1) => eval = -Search(-alphaBis, -alpha, depth - R, plyFromRoot + 1, allowNullMove);
 
         ref Entry entry = ref transpositionTable[board.ZobristKey & 3999999];
 
@@ -99,30 +100,22 @@ public class MyBot : IChessBot
             if (alpha >= beta)
                 return bestEval;
         }
-        else if (!isCheck && beta - alpha == 1 && allowNullMove && depth > 2)
+        else if (!isCheck && beta - alpha == 1)
         {
-            /*int staticEval = Evaluate();
 
-            if (depth <= 10 && staticEval - 96 * depth >= beta)
-                return staticEval;*/
+            canPrune = depth < 9 && Evaluate() + depth * 140 <= alpha;
 
-            board.TrySkipTurn();
-            eval = -Search(-beta, -beta + 1, depth - 2, plyFromRoot + 1, false);
-            board.UndoSkipTurn();
-
-            if (eval > beta)
-                return beta;
-
-            /*if (allowNullMove && depth >= 2)
+            if (allowNullMove && depth > 2)
             {
                 board.TrySkipTurn();
-                eval = -Search(-beta, -beta + 1, 3 + depth/5, plyFromRoot + 1, false);
+                eval = -Search(-beta, -beta + 1, depth - 2, plyFromRoot + 1, false);
                 board.UndoSkipTurn();
 
                 if (eval > beta)
                     return beta;
 
-            }*/
+            }
+
         }
 
         if (board.IsDraw())
@@ -147,21 +140,26 @@ public class MyBot : IChessBot
 
         foreach (Move move in moves)
         {
+
+            if (canPrune && moveCount > 0 && !move.IsCapture && !move.IsPromotion)
+                continue;
+
+
             board.MakeMove(move);
             if (moveCount++ == 0 || isQuiescence)
-                eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+                LambdaSearch(beta);
             else
             {
                 if (moveCount > 5 && depth > 2)
-                    eval = -Search(-alpha - 1, -alpha, depth - 3, plyFromRoot + 1, allowNullMove);
+                    LambdaSearch(alpha + 1, 3);
                 else
                     eval = alpha + 1;
 
                 if (eval > alpha)
                 {
-                    eval = -Search(-alpha - 1, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+                    LambdaSearch(alpha + 1);
                     if (eval > alpha)
-                        eval = -Search(-beta, -alpha, depth - 1, plyFromRoot + 1, allowNullMove);
+                        LambdaSearch(beta);
                 }
             }
 
