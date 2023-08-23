@@ -12,7 +12,7 @@ public class MyBot : IChessBot
     int maxTime;
     Board board;
     Timer timer;
-    int nodes;
+    //int nodes;
 
     int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
                           94, 281, 297, 512, 936, 0 };
@@ -33,13 +33,8 @@ public class MyBot : IChessBot
     public MyBot()
     {
         for (int square = 0; square < 64; square++)
-        {
             for (int tableID = 0; tableID < 12; tableID++)
-            {
                 pieceTable[tableID, square] = (int)Math.Round((sbyte)((System.Numerics.BigInteger)packedPieceTable[square]).ToByteArray()[tableID] * 1.5) + pieceValues[tableID];
-            }
-        }
-
     }
 
     public Move Think(Board newBoard, Timer newTimer)
@@ -54,12 +49,12 @@ public class MyBot : IChessBot
 
         for (int d = 2, alpha = -999999, beta = 999999; ;)
         {
-            nodes = 0;
+            //nodes = 0;
             int eval = Search(alpha, beta, d, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 break;
 
-            Console.WriteLine("Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
+            //Console.WriteLine("Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
 
             if (eval <= alpha)
                 alpha -= 62;
@@ -79,7 +74,7 @@ public class MyBot : IChessBot
 
     public int Search(int alpha, int beta, int depth, int plyFromRoot, bool allowNullMove)
     {
-        nodes++;
+        //nodes++;
         bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0;
         Move bestMove = default;
@@ -140,7 +135,6 @@ public class MyBot : IChessBot
 
             if (canPrune && moveCount > 0 && !move.IsCapture)
                 continue;
-
 
             board.MakeMove(move);
             if (moveCount++ == 0 || isQuiescence)
