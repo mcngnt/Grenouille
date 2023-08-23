@@ -12,7 +12,7 @@ public class MyBot : IChessBot
     int maxTime;
     Board board;
     Timer timer;
-    //int nodes;
+    int nodes;
 
     int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
                           94, 281, 297, 512, 936, 0 };
@@ -54,12 +54,12 @@ public class MyBot : IChessBot
 
         for (int d = 2, alpha = -999999, beta = 999999; ;)
         {
-            //nodes = 0;
+            nodes = 0;
             int eval = Search(alpha, beta, d, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 break;
 
-            //Console.WriteLine("Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
+            Console.WriteLine("Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
 
             if (eval <= alpha)
                 alpha -= 62;
@@ -79,7 +79,7 @@ public class MyBot : IChessBot
 
     public int Search(int alpha, int beta, int depth, int plyFromRoot, bool allowNullMove)
     {
-        //nodes++;
+        nodes++;
         bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0;
         Move bestMove = Move.NullMove;
@@ -129,8 +129,6 @@ public class MyBot : IChessBot
         Span<Move> moves = stackalloc Move[218];
         board.GetLegalMovesNonAlloc(ref moves, isQuiescence && !isCheck);
 
-
-
         foreach (Move move in moves)
             scores[scoreIter++] = -(move == entry.bestMove ? 9000000 : move.IsCapture ? 1000000 * (int)move.CapturePieceType - (int)move.MovePieceType : killerMoves[plyFromRoot, move.TargetSquare.Index] == move ? 900000 : historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index]);
 
@@ -166,14 +164,18 @@ public class MyBot : IChessBot
 
             if (eval > bestEval)
             {
-                bestMove = move;
+
                 bestEval = eval;
 
-                if (plyFromRoot == 0)
-                    rootMove = bestMove;
 
                 if (eval > alpha)
+                {
+                    bestMove = move;
                     alpha = eval;
+                    if (plyFromRoot == 0)
+                        rootMove = bestMove;
+                }
+
 
                 if (alpha >= beta)
                 {
