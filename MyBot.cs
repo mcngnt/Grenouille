@@ -147,7 +147,7 @@ public class MyBot : IChessBot
                 LambdaSearch(beta);
             else
             {
-                if (moveCount > 5 && depth > 2)
+                if (moveCount > 5 && depth > 1)
                     LambdaSearch(alpha + 1, 3);
                 else
                     eval = alpha + 1;
@@ -194,7 +194,7 @@ public class MyBot : IChessBot
         }
 
 
-        entry = new(board.ZobristKey, bestEval, depth, bestMove, bestEval >= beta ? 3 : bestEval <= startingAlpha ? 2 : 1);
+        entry = new(board.ZobristKey, bestEval, depth, bestMove == Move.NullMove ? entry.bestMove : bestMove, bestEval >= beta ? 3 : bestEval <= startingAlpha ? 2 : 1);
 
         return bestEval;
 
