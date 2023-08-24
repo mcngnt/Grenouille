@@ -5,17 +5,19 @@ using System.Linq;
 
 public class MyBot : IChessBot
 {
-    private readonly record struct Entry(ulong zobristHash, int score, int depth, Move bestMove, int flag);
-    Entry[] transpositionTable = new Entry[4000000];
+    record struct Entry(ulong zobristHash, int score, int depth, Move bestMove, int flag);
+    // Size chosen to be under the size limit
+    private readonly Entry[] transpositionTable = new Entry[4000000];
 
     private Move rootMove;
     private int maxTime;
     private Board board;
     private Timer timer;
-    private int nodes;
+    //private int nodes;
 
     private readonly int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
                           94, 281, 297, 512, 936, 0 };
+    // Pieces contribution to gamePhase (endgmame/middleGame)
     private readonly int[] piecePhaseValue = { 0, 1, 1, 2, 4, 0 };
 
     private readonly Move[] killerMoves = new Move[99];
@@ -30,40 +32,51 @@ public class MyBot : IChessBot
     private readonly int[,] pieceTable = new int[12, 64];
 
 
+    // Constants within search where found thanks to texel tuning
+
+
     public MyBot()
     {
+        // Unpack the packed piece table ( 64 decimal numbers to 12 int[64] )
         for (int square = 0; square < 64; square++)
             for (int tableID = 0; tableID < 12; tableID++)
+                // 1 decimal number = 12 bytes that are then multiplied and rounded to give 12 ints
+                // I packed and unpacked with a 1.5 factor so that the max abs value of the PESTO table could fit in the -128/127 scale
                 pieceTable[tableID, square] = (int)Math.Round((sbyte)((System.Numerics.BigInteger)packedPieceTable[square]).ToByteArray()[tableID] * 1.5) + pieceValues[tableID];
     }
 
     public Move Think(Board newBoard, Timer newTimer)
     {
+        // cache board and timer
         board = newBoard;
         timer = newTimer;
 
+        // Always allocate 1/30 of remaining time to thinking time : con -> playing really fast in endgame
         maxTime = timer.MillisecondsRemaining / 30;
 
-
+        // Reset historyTable at each new iterative search
         historyHeuristicTable = new int[7, 64];
 
+        // Iterative deepening
         for (int d = 2, alpha = -999999, beta = 999999; ;)
         {
-            nodes = 0;
+            //nodes = 0;
             int eval = Search(alpha, beta, d, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 break;
 
-            Console.WriteLine("Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
+            //Console.WriteLine("Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
 
+
+            // Gradual widening
             if (eval <= alpha)
-                alpha -= 62;
+                alpha -= 65;
             else if (eval >= beta)
-                beta += 62;
+                beta += 65;
             else
             {
-                alpha = eval - 17;
-                beta = eval + 17;
+                alpha = eval - 25;
+                beta = eval + 25;
                 d++;
             }
 
@@ -74,21 +87,28 @@ public class MyBot : IChessBot
 
     public int Search(int alpha, int beta, int depth, int plyFromRoot, bool allowNullMove)
     {
+        // using a ref for speed and tokens' sake
         ref Entry entry = ref transpositionTable[board.ZobristKey & 3999999];
 
-        nodes++;
-        bool isQuiescence = depth <= 0, isCheck = board.IsInCheck();
+        //nodes++;
+        bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0, entryFlag = entry.flag, entryScore = entry.score;
         Move bestMove = default;
 
+        // Lambda expression to save tokens
         int LambdaSearch(int alphaBis, bool allowNull, int R = 1) => eval = -Search(-alphaBis, -alpha, depth - R, plyFromRoot + 1, allowNull);
 
+        if (board.IsInCheckmate())
+            return plyFromRoot - 999999;
         if (board.IsDraw())
             return 0;
 
-        if (plyFromRoot > 0 && entry.zobristHash == board.ZobristKey && entry.depth >= depth && (entryFlag == 1 || entryFlag == 2 && entryScore <= alpha || entryFlag == 3 && entryScore >= beta))
+        // Transposition pruning (close to Bruce Moreland's implementation)
+        //  Not prune at root                                                                  Avoid using moves from checkmate or times up situation
+        if (plyFromRoot > 0 && entry.zobristHash == board.ZobristKey && entry.depth >= depth && Math.Abs(entryScore) < 800000 && (entryFlag == 1 || entryFlag == 2 && entryScore <= alpha || entryFlag == 3 && entryScore >= beta))
             return entryScore;
 
+        // Check extension
         if (isCheck)
             depth++;
 
@@ -100,14 +120,18 @@ public class MyBot : IChessBot
             if (alpha >= beta)
                 return bestEval;
         }
+        // Only prune when not in check on nodes not part of the PV
         else if (!isCheck && beta - alpha == 1)
         {
+            // Futility pruning
+            canPrune = depth < 9 && Evaluate() + depth * 140 <= alpha;
 
-            //canPrune = depth < 9 && Evaluate() + depth * 140 <= alpha;
 
+            // Null move pruning
             if (allowNullMove && depth >= 2)
             {
                 board.TrySkipTurn();
+                // Here using R = 3 + depth/5
                 LambdaSearch(beta, allowNullMove, 3 + depth/5);
                 board.UndoSkipTurn();
 
@@ -118,38 +142,44 @@ public class MyBot : IChessBot
 
         }
 
-        if (board.IsInCheckmate())
-            return plyFromRoot - 999999;
-
         Span<Move> moves = stackalloc Move[218];
         board.GetLegalMovesNonAlloc(ref moves, isQuiescence && !isCheck);
 
+
+        // Move ordering scores (using big coeficients to counterbalence history heuristic
         foreach (Move move in moves)
             scores[scoreIter++] = -(move == entry.bestMove ? 9000000 : move.IsCapture ? 1000000 * ((int)move.CapturePieceType - (int)move.MovePieceType) : killerMoves[plyFromRoot] == move ? 900000 : historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index]);
 
+        // Use an int array for scores instead of creating a new span at each search
         scores.AsSpan(0, moves.Length).Sort(moves);
 
 
         foreach (Move move in moves)
         {
 
-/*            if (canPrune && moveCount > 0 && !move.IsCapture)
-                continue;*/
+            // Futility pruning
+            if (canPrune && moveCount > 0 && !move.IsCapture && !move.IsPromotion)
+                continue;
 
             board.MakeMove(move);
+            // LMR
             if (moveCount++ == 0 || isQuiescence)
                 LambdaSearch(beta,allowNullMove);
             else
             {
-                if (moveCount > 5 && depth > 1)
+                if (moveCount >= 5 && depth >= 2)
+                    // Null window search
                     LambdaSearch(alpha + 1, allowNullMove,3);
                 else
+                    // To ensure that we enter the second if statement
                     eval = alpha + 1;
 
                 if (eval > alpha)
                 {
+                    //Null window search
                     LambdaSearch(alpha + 1, allowNullMove);
                     if (eval > alpha)
+                        // If eval > alpha, need to do a complete search to find true eval
                         LambdaSearch(beta, allowNullMove);
                 }
             }
@@ -173,8 +203,10 @@ public class MyBot : IChessBot
 
                 if (alpha >= beta)
                 {
+                    // Beta pruning
                     if (!move.IsCapture)
                     {
+                        // Update killer and history heuristic
                         killerMoves[plyFromRoot] = move;
                         historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
                     }
@@ -183,11 +215,12 @@ public class MyBot : IChessBot
 
             }
 
+            // Time constraint check
             if (depth > 1 && timer.MillisecondsElapsedThisTurn > maxTime)
                 return 999999;
         }
 
-
+        // Store new entry (always replace scheme : more token efficient)
         entry = new(board.ZobristKey, bestEval, depth, bestMove == default ? entry.bestMove : bestMove, bestEval >= beta ? 3 : bestEval <= startingAlpha ? 2 : 1);
 
         return bestEval;
@@ -197,6 +230,7 @@ public class MyBot : IChessBot
 
     public int Evaluate()
     {
+        // PESTO's evaluation + tempo bonus
         int gamePhase = 0, endGame = 0, middleGame = 0;
 
         for (int isWhite = 1; isWhite >= 0; middleGame = -middleGame, endGame = -endGame, --isWhite)
@@ -206,9 +240,12 @@ public class MyBot : IChessBot
 
                 for (ulong pieceMask = board.GetPieceBitboard((PieceType)(pieceID + 1), isWhite > 0); pieceMask != 0;)
                 {
+                    // Iterating through pieces bitboard and gradually cleaning them
                     int squareIndex = BitboardHelper.ClearAndGetIndexOfLSB(ref pieceMask);
 
+                    // flip side when white to play
                     if (isWhite > 0)
+                        // trick found on the chellenge discord
                         squareIndex ^= 56;
 
                     gamePhase += piecePhaseValue[pieceID];
@@ -218,7 +255,7 @@ public class MyBot : IChessBot
 
             }
         }
-
+        //                  Tapperded eval                                                                     tempo bonus
         return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2;
 
     }
