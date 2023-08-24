@@ -18,7 +18,9 @@ public class MyBot : IChessBot
     private int maxTime;
     private Board board;
     private Timer timer;
-    //private int nodes;
+#if DEBUG
+    private int nodes;
+#endif
 
     // PESTO's pieces values
     private readonly int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
@@ -66,13 +68,15 @@ public class MyBot : IChessBot
         // Iterative deepening
         for (int d = 2, alpha = -999999, beta = 999999; ;)
         {
-            //nodes = 0;
+#if DEBUG
+            nodes = 0;
+#endif
             int eval = Search(alpha, beta, d, 0, true);
             if (timer.MillisecondsElapsedThisTurn > maxTime)
                 break;
-
-            //Console.WriteLine("Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
-
+#if DEBUG
+            Console.WriteLine("info Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
+#endif
 
             // Gradual widening
             if (eval <= alpha)
@@ -95,10 +99,12 @@ public class MyBot : IChessBot
 
     public int Search(int alpha, int beta, int depth, int plyFromRoot, bool allowNullMove)
     {
+#if DEBUG
+        nodes++;
+#endif
         // using a ref for speed and tokens' sake
         ref Entry entry = ref transpositionTable[board.ZobristKey & 3999999];
 
-        //nodes++;
         bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
         //current best eval at this node
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0, entryFlag = entry.flag, entryScore = entry.score;
