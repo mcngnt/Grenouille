@@ -12,6 +12,7 @@ public class MyBot : IChessBot
     int maxTime;
     Board board;
     Timer timer;
+
 #if DEBUG
     int nodes;
 #endif
@@ -29,8 +30,7 @@ public class MyBot : IChessBot
 
 
     decimal[] packedPieceTable = { 64365675561202951673254613248m, 72128178712990387091628344576m, 75532537563137722899854125312m, 75536154932036771593335594752m, 77083570536266386456057948416m, 3110608541636285942974430976m, 936945656906376365998470656m, 75839562049893511208233580800m, 77048506965452586199286796097m, 3420098330133489500069553497m, 2810795141387667142788526121m, 3437013754922314846191425599m, 3452687399601669993672216365m, 7757691002792640473062648148m, 4666481959896172496725738775m, 2166409085788340820470003193m, 2460187690506760228122780156m, 3409199070807303941323827205m, 4649552314590726507357608209m, 3134763521725202195292039957m, 4060800717490095119635265579m, 9313555161389368408616818213m, 8991976096719656293972390161m, 2793818196253891283677814259m, 77683174187029576759828675319m, 4660418590176712645448764169m, 4971145620211324499469864196m, 5607002785501568496010601230m, 5307189237648302219852323087m, 6841316065198388299381157384m, 5308388588818498857642298379m, 647988997712072446081699825m, 75809334407291471090360842222m, 78322691297526401051434484735m, 4348529951871323093202439165m, 4989251265752579450371901704m, 5597312470813537077508379403m, 4671270607515738602000092420m, 1889532129915238800511405575m, 77081081831403468769999453167m, 75502243563272129380224135663m, 78896921543467231770095319805m, 2179679196345332391270287613m, 4338830174078735659142088697m, 4650714182750414584320429314m, 3418804494205898040108256002m, 1557077491546032522931212566m, 77376040767919248347220145656m, 73949978069138388163940838889m, 77354313122912694185105219071m, 1213766170969874494391056627m, 3081561358716687252805713649m, 3082732579536108768113065974m, 1220991372808161450603187216m, 78581358699470342360447514393m, 76109128861678447697508561905m, 68680260866671043956521482752m, 72396532057671382741144236544m, 75186737407056809798802069760m, 77337402494773235399328459264m, 73655004947793353634062267648m, 76728065955037551248392383744m, 74570190181483732716705215232m, 70531093311992994451646771456m };
-
-    int[,] pieceTable = new int[12, 64];
+    private  int[,] pieceTable = new int[12, 64];
 
 
     public MyBot()
@@ -84,16 +84,19 @@ public class MyBot : IChessBot
 #if DEBUG
         nodes++;
 #endif
-        bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
-        int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0;
-        Move bestMove = default;
-
-        int LambdaSearch(int alphaBis, int R = 1) => eval = -Search(-alphaBis, -alpha, depth - R, plyFromRoot + 1, allowNullMove);
-
         ref Entry entry = ref transpositionTable[board.ZobristKey & 3999999];
 
-        if (plyFromRoot > 0 && entry.zobristHash == board.ZobristKey && entry.depth >= depth && (entry.flag == 1 || entry.flag == 2 && entry.score <= alpha || entry.flag == 3 && entry.score >= beta))
-            return entry.score;
+        bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
+        int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0, entryFlag = entry.flag, entryScore = entry.score;
+        Move bestMove = default;
+
+        int LambdaSearch(int alphaBis, bool allowNull, int R = 1) => eval = -Search(-alphaBis, -alpha, depth - R, plyFromRoot + 1, allowNull);
+
+        if (board.IsDraw())
+            return 0;
+
+        if (plyFromRoot > 0 && entry.zobristHash == board.ZobristKey && entry.depth >= depth && (entryFlag == 1 || entryFlag == 2 && entryScore <= alpha || entryFlag == 3 && entryScore >= beta))
+            return entryScore;
 
         if (isCheck)
             depth++;
@@ -111,21 +114,19 @@ public class MyBot : IChessBot
 
             canPrune = depth < 9 && Evaluate() + depth * 140 <= alpha;
 
-            if (allowNullMove && depth > 2)
+            if (allowNullMove && depth >= 2)
             {
                 board.TrySkipTurn();
-                eval = -Search(-beta, -beta + 1, depth - 3, plyFromRoot + 1, false);
+                LambdaSearch(beta, allowNullMove, 3 + depth / 5);
                 board.UndoSkipTurn();
 
-                if (eval > beta)
+                if (eval >= beta)
                     return beta;
 
             }
 
         }
 
-        if (board.IsDraw())
-            return 0;
 
         if (board.IsInCheckmate())
             return plyFromRoot - 999999;
@@ -147,19 +148,19 @@ public class MyBot : IChessBot
 
             board.MakeMove(move);
             if (moveCount++ == 0 || isQuiescence)
-                LambdaSearch(beta);
+                LambdaSearch(beta, allowNullMove);
             else
             {
                 if (moveCount > 5 && depth > 1)
-                    LambdaSearch(alpha + 1, 3);
+                    LambdaSearch(alpha + 1,allowNullMove, 3);
                 else
                     eval = alpha + 1;
 
                 if (eval > alpha)
                 {
-                    LambdaSearch(alpha + 1);
+                    LambdaSearch(alpha + 1, allowNullMove);
                     if (eval > alpha)
-                        LambdaSearch(beta);
+                        LambdaSearch(beta, allowNullMove);
                 }
             }
 
@@ -227,7 +228,6 @@ public class MyBot : IChessBot
 
             }
         }
-
         return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2;
 
     }
