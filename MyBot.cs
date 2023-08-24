@@ -3,6 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+
+/// <summary>
+/// GRENOUILLE ENGINE
+/// </summary>
+
 public class MyBot : IChessBot
 {
     record struct Entry(ulong zobristHash, int score, int depth, Move bestMove, int flag);
@@ -15,8 +20,9 @@ public class MyBot : IChessBot
     private Timer timer;
     //private int nodes;
 
+    // PESTO's pieces values
     private readonly int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
-                          94, 281, 297, 512, 936, 0 };
+                                          94, 281, 297, 512, 936, 0 };
     // Pieces contribution to gamePhase (endgmame/middleGame)
     private readonly int[] piecePhaseValue = { 0, 1, 1, 2, 4, 0 };
 
@@ -70,13 +76,15 @@ public class MyBot : IChessBot
 
             // Gradual widening
             if (eval <= alpha)
-                alpha -= 65;
+                // If eval fell outside of the window, try search again with a wider window
+                alpha -= 70;
             else if (eval >= beta)
-                beta += 65;
+                beta += 70;
             else
             {
-                alpha = eval - 25;
-                beta = eval + 25;
+                // If eval feell inside the window, searching at next depth with a recentered window
+                alpha = eval - 30;
+                beta = eval + 30;
                 d++;
             }
 
@@ -92,7 +100,9 @@ public class MyBot : IChessBot
 
         //nodes++;
         bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
+        //current best eval at this node
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0, entryFlag = entry.flag, entryScore = entry.score;
+        // use default instead of Move.NullMove to save tockens
         Move bestMove = default;
 
         // Lambda expression to save tokens
@@ -112,19 +122,21 @@ public class MyBot : IChessBot
         if (isCheck)
             depth++;
 
+        // Here the main search and the quiescence search are combined for tokens' sake
         if (isQuiescence)
         {
+            // alpha-beta pruning quiescence
             bestEval = Evaluate();
             if (bestEval > alpha)
                 alpha = bestEval;
             if (alpha >= beta)
                 return bestEval;
         }
-        // Only prune when not in check on nodes not part of the PV
+        // Only prune when not in check and on nodes not part of the PV
         else if (!isCheck && beta - alpha == 1)
         {
             // Futility pruning
-            canPrune = depth < 9 && Evaluate() + depth * 140 <= alpha;
+            canPrune = depth < 9 && Evaluate() + depth * 150 <= alpha;
 
 
             // Null move pruning
@@ -141,6 +153,10 @@ public class MyBot : IChessBot
             }
 
         }
+
+        // Time constraint check
+        if (depth > 1 && timer.MillisecondsElapsedThisTurn > maxTime)
+            return 999999;
 
         Span<Move> moves = stackalloc Move[218];
         board.GetLegalMovesNonAlloc(ref moves, isQuiescence && !isCheck);
@@ -188,18 +204,16 @@ public class MyBot : IChessBot
 
             if (eval > bestEval)
             {
-
                 bestEval = eval;
-
 
                 if (eval > alpha)
                 {
                     bestMove = move;
                     alpha = eval;
                     if (plyFromRoot == 0)
+                        // Update root's best move
                         rootMove = bestMove;
                 }
-
 
                 if (alpha >= beta)
                 {
@@ -215,9 +229,7 @@ public class MyBot : IChessBot
 
             }
 
-            // Time constraint check
-            if (depth > 1 && timer.MillisecondsElapsedThisTurn > maxTime)
-                return 999999;
+            
         }
 
         // Store new entry (always replace scheme : more token efficient)
@@ -233,6 +245,7 @@ public class MyBot : IChessBot
         // PESTO's evaluation + tempo bonus
         int gamePhase = 0, endGame = 0, middleGame = 0;
 
+        //                                switch signs of current scores when switching form white to black (it works because we first add ONLY white pieces score)
         for (int isWhite = 1; isWhite >= 0; middleGame = -middleGame, endGame = -endGame, --isWhite)
         {
             for (int pieceID = 0; pieceID < 6; pieceID++)
@@ -245,7 +258,7 @@ public class MyBot : IChessBot
 
                     // flip side when white to play
                     if (isWhite > 0)
-                        // trick found on the chellenge discord
+                        // trick found on the challenge's discord
                         squareIndex ^= 56;
 
                     gamePhase += piecePhaseValue[pieceID];
