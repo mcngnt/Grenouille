@@ -117,12 +117,12 @@ public class MyBot : IChessBot
         else if (!isCheck && beta - alpha == 1)
         {
 
-            canPrune = depth < 9 && Evaluate() + depth * 140 <= alpha;
+            canPrune = depth <= 3 && Evaluate() + depth * 100 <= alpha;
 
-            if (allowNullMove && depth > 2)
+            if (allowNullMove && depth >= 3)
             {
                 board.TrySkipTurn();
-                LambdaSearch(beta, allowNullMove, 3);
+                LambdaSearch(beta, allowNullMove, 3 + depth/5);
                 board.UndoSkipTurn();
 
                 if (eval > beta)
