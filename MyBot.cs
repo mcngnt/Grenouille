@@ -12,13 +12,14 @@ public class MyBot : IChessBot
     int maxTime;
     Board board;
     Timer timer;
+
 #if DEBUG
     int nodes;
 #endif
 
 
     readonly int[] pieceValues = { 82, 337, 365, 477, 1025, 0,
-                          94, 281, 297, 512, 936, 0 };
+                                   94, 281, 297, 512, 936, 0 };
     readonly int[] piecePhaseValue = { 0, 1, 1, 2, 4, 0 };
 
     Move[,] killerMoves = new Move[99, 64];
@@ -50,7 +51,7 @@ public class MyBot : IChessBot
 
         historyHeuristicTable = new int[7, 64];
 
-        for (int d = 2, alpha = -999999, beta = 999999;d < 90;)
+        for (int d = 2, alpha = -999999, beta = 999999; d < 90;)
         {
 #if DEBUG
             nodes = 0;
@@ -92,6 +93,12 @@ public class MyBot : IChessBot
 
         int LambdaSearch(int alphaBis, bool allowNull, int R = 1) => eval = -Search(-alphaBis, -alpha, depth - R, plyFromRoot + 1, allowNull);
 
+        if (board.IsDraw())
+            return 0;
+
+        if (board.IsInCheckmate())
+            return plyFromRoot - 999999;
+
 
         if (plyFromRoot > 0 && entry.zobristHash == board.ZobristKey && entry.depth >= depth && (entryFlag == 1 || entryFlag == 2 && entryScore <= alpha || entryFlag == 3 && entryScore >= beta))
             return entryScore;
@@ -125,11 +132,6 @@ public class MyBot : IChessBot
 
         }
 
-        if (board.IsDraw())
-            return 0;
-
-        if (board.IsInCheckmate())
-            return plyFromRoot - 999999;
 
         Span<Move> moves = stackalloc Move[218];
         board.GetLegalMovesNonAlloc(ref moves, isQuiescence && !isCheck);
@@ -193,7 +195,7 @@ public class MyBot : IChessBot
 
             }
 
-            if (timer.MillisecondsElapsedThisTurn > maxTime)
+            if (depth > 2 && timer.MillisecondsElapsedThisTurn > maxTime)
                 return 999999;
         }
 
