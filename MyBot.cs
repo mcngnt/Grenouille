@@ -231,7 +231,7 @@ public class MyBot : IChessBot
             }
         }
 
-        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2;
+        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? 10 : 0);
 
     }
 
