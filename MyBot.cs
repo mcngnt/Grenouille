@@ -87,7 +87,7 @@ public class MyBot : IChessBot
 #endif
         ref Entry entry = ref transpositionTable[board.ZobristKey & 3999999];
 
-        bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
+        bool isQuiescence = depth <= 0, isCheck = board.IsInCheck();
         int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0, entryScore = entry.score, entryFlag = entry.flag;
         Move bestMove = default;
 
@@ -117,7 +117,7 @@ public class MyBot : IChessBot
         else if (!isCheck && beta - alpha == 1)
         {
 
-            canPrune = depth <= 3 && Evaluate() + depth * 100 <= alpha;
+            /*canPrune = depth <= 6 && Evaluate() + depth * 100 <= alpha;*/
 
             if (allowNullMove && depth >= 3)
             {
@@ -144,9 +144,9 @@ public class MyBot : IChessBot
 
         foreach (Move move in moves)
         {
-
-            if (canPrune && moveCount > 0 && !move.IsCapture)
-                continue;
+/*
+            if (canPrune && moveCount > 0 && !move.IsCapture )
+                continue;*/
 
             board.MakeMove(move);
             if (moveCount++ == 0 || isQuiescence)
