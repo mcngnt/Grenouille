@@ -84,16 +84,17 @@ public class MyBot : IChessBot
 #if DEBUG
         nodes++;
 #endif
-        bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
-        int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0;
-        Move bestMove = default;
-
-        int LambdaSearch(int alphaBis, int R = 1) => eval = -Search(-alphaBis, -alpha, depth - R, plyFromRoot + 1, allowNullMove);
-
         ref Entry entry = ref transpositionTable[board.ZobristKey & 3999999];
 
-        if (plyFromRoot > 0 && entry.zobristHash == board.ZobristKey && entry.depth >= depth && (entry.flag == 1 || entry.flag == 2 && entry.score <= alpha || entry.flag == 3 && entry.score >= beta))
-            return entry.score;
+        bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
+        int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0, entryScore = entry.score, entryFlag = entry.flag;
+        Move bestMove = default;
+
+        int LambdaSearch(int alphaBis, bool allowNull, int R = 1) => eval = -Search(-alphaBis, -alpha, depth - R, plyFromRoot + 1, allowNull);
+
+
+        if (plyFromRoot > 0 && entry.zobristHash == board.ZobristKey && entry.depth >= depth && (entryFlag == 1 || entryFlag == 2 && entryScore <= alpha || entryFlag == 3 && entryScore >= beta))
+            return entryScore;
 
         if (isCheck)
             depth++;
@@ -114,7 +115,7 @@ public class MyBot : IChessBot
             if (allowNullMove && depth > 2)
             {
                 board.TrySkipTurn();
-                eval = -Search(-beta, -beta + 1, depth - 3, plyFromRoot + 1, false);
+                LambdaSearch(beta, allowNullMove, 3);
                 board.UndoSkipTurn();
 
                 if (eval > beta)
@@ -147,19 +148,19 @@ public class MyBot : IChessBot
 
             board.MakeMove(move);
             if (moveCount++ == 0 || isQuiescence)
-                LambdaSearch(beta);
+                LambdaSearch(beta, allowNullMove);
             else
             {
-                if (moveCount > 5 && depth > 1)
-                    LambdaSearch(alpha + 1, 3);
+                if (moveCount >= 5 && depth >= 2)
+                    LambdaSearch(alpha + 1, allowNullMove, 3);
                 else
                     eval = alpha + 1;
 
                 if (eval > alpha)
                 {
-                    LambdaSearch(alpha + 1);
+                    LambdaSearch(alpha + 1, allowNullMove);
                     if (eval > alpha)
-                        LambdaSearch(beta);
+                        LambdaSearch(beta, allowNullMove);
                 }
             }
 
