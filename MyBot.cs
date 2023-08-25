@@ -22,7 +22,7 @@ public class MyBot : IChessBot
                                    94, 281, 297, 512, 936, 0 };
     readonly int[] piecePhaseValue = { 0, 1, 1, 2, 4, 0 };
 
-    Move[,] killerMoves = new Move[99, 64];
+    Move[] killerMoves = new Move[99];
 
     int[,] historyHeuristicTable;
 
@@ -99,6 +99,9 @@ public class MyBot : IChessBot
         if (board.IsInCheckmate())
             return plyFromRoot - 999999;
 
+        if (depth > 2 && timer.MillisecondsElapsedThisTurn > maxTime)
+            return 999999;
+
 
         if (plyFromRoot > 0 && entry.zobristHash == board.ZobristKey && entry.depth >= depth && (entryFlag == 1 || entryFlag == 2 && entryScore <= alpha || entryFlag == 3 && entryScore >= beta))
             return entryScore;
@@ -137,7 +140,7 @@ public class MyBot : IChessBot
         board.GetLegalMovesNonAlloc(ref moves, isQuiescence && !isCheck);
 
         foreach (Move move in moves)
-            scores[scoreIter++] = -(move == entry.bestMove ? 9000000 : move.IsCapture ? 1000000 * (int)move.CapturePieceType - (int)move.MovePieceType : killerMoves[plyFromRoot, move.TargetSquare.Index] == move ? 900000 : historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index]);
+            scores[scoreIter++] = -(move == entry.bestMove ? 9000000 : move.IsCapture ? 1000000 * (int)move.CapturePieceType - (int)move.MovePieceType : killerMoves[plyFromRoot] == move ? 900000 : historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index]);
 
         scores.AsSpan(0, moves.Length).Sort(moves);
 
@@ -187,16 +190,13 @@ public class MyBot : IChessBot
                 {
                     if (!move.IsCapture)
                     {
-                        killerMoves[plyFromRoot, move.TargetSquare.Index] = move;
+                        killerMoves[plyFromRoot] = move;
                         historyHeuristicTable[(int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
                     }
                     break;
                 }
 
             }
-
-            if (depth > 2 && timer.MillisecondsElapsedThisTurn > maxTime)
-                return 999999;
         }
 
 
