@@ -65,13 +65,13 @@ public class MyBot : IChessBot
 #endif
 
             if (eval <= alpha)
-                alpha -= 70;
+                alpha -= 50;
             else if (eval >= beta)
-                beta += 70;
+                beta += 50;
             else
             {
-                alpha = eval - 25;
-                beta = eval + 25;
+                alpha = eval - 30;
+                beta = eval + 30;
                 d++;
             }
 
@@ -120,12 +120,12 @@ public class MyBot : IChessBot
         else if (!isCheck && beta - alpha == 1)
         {
 
-            canPrune = depth <= 7 && Evaluate() + depth * 140 <= alpha;
+            canPrune = depth <= 5 && Evaluate() + depth * 160 <= alpha;
 
             if (allowNullMove && depth >= 2)
             {
                 board.TrySkipTurn();
-                LambdaSearch(beta, allowNullMove, 3 + depth / 5);
+                LambdaSearch(beta, allowNullMove, 3 + depth / 4);
                 board.UndoSkipTurn();
 
                 if (eval > beta)
@@ -233,7 +233,7 @@ public class MyBot : IChessBot
             }
         }
 
-        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? 50 : 0);
+        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? 120 : 0);
 
     }
 
