@@ -46,7 +46,7 @@ public class MyBot : IChessBot
         board = newBoard;
         timer = newTimer;
 
-        maxTime = timer.MillisecondsRemaining / Constants.TimeConstraint;
+        maxTime = timer.MillisecondsRemaining / 30;
 
 
         historyHeuristicTable = new int[7, 64];
@@ -65,13 +65,13 @@ public class MyBot : IChessBot
 #endif
 
             if (eval <= alpha)
-                alpha -= Constants.AWAlphaBetaBonus;
+                alpha -= 70;
             else if (eval >= beta)
-                beta += Constants.AWAlphaBetaBonus;
+                beta += 70;
             else
             {
-                alpha = eval - Constants.AWSize;
-                beta = eval + Constants.AWSize;
+                alpha = eval - 25;
+                beta = eval + 25;
                 d++;
             }
 
@@ -120,12 +120,12 @@ public class MyBot : IChessBot
         else if (!isCheck && beta - alpha == 1)
         {
 
-            canPrune = depth <= Constants.FutilityStartDepth && Evaluate() + depth * Constants.FutilityMargin <= alpha;
+            canPrune = depth <= 7 && Evaluate() + depth * 140 <= alpha;
 
             if (allowNullMove && depth >= 2)
             {
                 board.TrySkipTurn();
-                LambdaSearch(beta, allowNullMove, 3 + depth/Constants.NullMoveDepthBonus);
+                LambdaSearch(beta, allowNullMove, 3 + depth / 5);
                 board.UndoSkipTurn();
 
                 if (eval > beta)
@@ -233,7 +233,7 @@ public class MyBot : IChessBot
             }
         }
 
-        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? Constants.CheckMalus : 0);
+        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? 50 : 0);
 
     }
 
