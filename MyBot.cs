@@ -70,8 +70,11 @@ public class MyBot : IChessBot
                 beta += 50;
             else
             {
-                alpha = eval - 30;
-                beta = eval + 30;
+                if (d > 5)
+                {
+                    alpha = eval - 30;
+                    beta = eval + 30;
+                }
                 d++;
             }
 
