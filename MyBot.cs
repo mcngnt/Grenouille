@@ -65,13 +65,13 @@ public class MyBot : IChessBot
 #endif
 
             if (eval <= alpha)
-                alpha -= 62;
+                alpha -= 70;
             else if (eval >= beta)
-                beta += 62;
+                beta += 70;
             else
             {
-                alpha = eval - 17;
-                beta = eval + 17;
+                alpha = eval - 25;
+                beta = eval + 25;
                 d++;
             }
 
@@ -231,7 +231,7 @@ public class MyBot : IChessBot
             }
         }
 
-        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? 10 : 0);
+        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? 50 : 0);
 
     }
 
