@@ -70,8 +70,11 @@ public class MyBot : IChessBot
                 beta += 50;
             else
             {
-                alpha = eval - 30;
-                beta = eval + 30;
+                if (d >= 4)
+                {
+                    alpha = eval - 30;
+                    beta = eval + 30;
+                }
                 d++;
             }
 
@@ -211,9 +214,9 @@ public class MyBot : IChessBot
 
     public int Evaluate()
     {
-        int gamePhase = 0, endGame = 0, middleGame = 0, mobilitySquareNB = 0;
+        int gamePhase = 0, endGame = 0, middleGame = 0;
 
-        for (int isWhite = 1; isWhite >= 0; middleGame = -middleGame, endGame = -endGame, --isWhite, mobilitySquareNB = -mobilitySquareNB)
+        for (int isWhite = 1; isWhite >= 0; middleGame = -middleGame, endGame = -endGame, --isWhite)
         {
             for (int pieceID = 0; pieceID < 6; pieceID++)
             {
@@ -225,17 +228,15 @@ public class MyBot : IChessBot
                     if (isWhite > 0)
                         squareIndex ^= 56;
 
-                    mobilitySquareNB += BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)pieceID, new Square(squareIndex), board, isWhite > 0));
                     gamePhase += piecePhaseValue[pieceID];
                     middleGame += pieceTable[pieceID, squareIndex];
                     endGame += pieceTable[pieceID + 6, squareIndex];
                 }
 
             }
-
         }
 
-        return ((middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 + mobilitySquareNB) * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? 120 : 0);
+        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? 120 : 0);
 
     }
 
