@@ -88,7 +88,7 @@ public class MyBot : IChessBot
         ref Entry entry = ref transpositionTable[board.ZobristKey & 3999999];
 
         bool isQuiescence = depth <= 0, isCheck = board.IsInCheck(), canPrune = false;
-        int bestEval = -999999, startingAlpha = alpha, moveCount = 0, eval = 0, scoreIter = 0, entryScore = entry.score, entryFlag = entry.flag;
+        int bestEval = -999999, moveCount = 0, eval = 0, scoreIter = 0, entryScore = entry.score, entryFlag = entry.flag, currentFlag = 2;
         Move bestMove = default;
 
         int LambdaSearch(int alphaBis, bool allowNull, int R = 1) => eval = -Search(-alphaBis, -alpha, depth - R, plyFromRoot + 1, allowNull);
@@ -179,6 +179,7 @@ public class MyBot : IChessBot
 
                 if (eval > alpha)
                 {
+                    currentFlag = 1;
                     bestMove = move;
                     alpha = eval;
                     if (plyFromRoot == 0)
@@ -188,6 +189,7 @@ public class MyBot : IChessBot
 
                 if (alpha >= beta)
                 {
+                    currentFlag = 3;
                     if (!move.IsCapture)
                     {
                         killerMoves[plyFromRoot] = move;
@@ -200,7 +202,7 @@ public class MyBot : IChessBot
         }
 
 
-        entry = new(board.ZobristKey, bestEval, depth, bestMove == default ? entry.bestMove : bestMove, bestEval >= beta ? 3 : bestEval <= startingAlpha ? 2 : 1);
+        entry = new(board.ZobristKey, bestEval, depth, bestMove == default ? entry.bestMove : bestMove, currentFlag);
 
         return bestEval;
 
