@@ -36,8 +36,8 @@ public class MyBot : IChessBot
 
     public MyBot()
     {
-        for (int square = 0; square < 64; square++)
-            for (int tableID = 0; tableID < 12; tableID++)
+        for (int square = -1; ++square < 64;)
+            for (int tableID = -1; ++tableID < 12;)
                 pieceTable[tableID, square] = (int)Math.Round((sbyte)((System.Numerics.BigInteger)packedPieceTable[square]).ToByteArray()[tableID] * 1.5) + pieceValues[tableID];
     }
 
@@ -213,9 +213,9 @@ public class MyBot : IChessBot
     {
         int gamePhase = 0, endGame = 0, middleGame = 0;
 
-        for (int isWhite = 1; isWhite >= 0; middleGame = -middleGame, endGame = -endGame, --isWhite)
+        for (int isWhite = 2; --isWhite >= 0; middleGame = -middleGame, endGame = -endGame)
         {
-            for (int pieceID = 0; pieceID < 6; pieceID++)
+            for (int pieceID = -1; ++pieceID < 6;)
             {
 
                 for (ulong pieceMask = board.GetPieceBitboard((PieceType)(pieceID + 1), isWhite > 0); pieceMask != 0;)
