@@ -46,7 +46,7 @@ public class MyBot : IChessBot
         board = newBoard;
         timer = newTimer;
 
-        maxTime = timer.MillisecondsRemaining / 31;
+        maxTime = timer.MillisecondsRemaining / 35;
 
 
         historyHeuristicTable = new int[7, 64];
@@ -63,9 +63,9 @@ public class MyBot : IChessBot
 #endif
 
             if (eval <= alpha)
-                alpha -= 45;
+                alpha -= 85;
             else if (eval >= beta)
-                beta += 45;
+                beta += 85;
             else
             {
                 alpha = eval - 27;
@@ -121,10 +121,10 @@ public class MyBot : IChessBot
         else if (!isCheck && beta - alpha == 1)
         {
 
-            if (depth < 5 && Evaluate() - depth * 151 > beta)
+            if (depth <= 6 && Evaluate() - depth * 165 > beta)
                 return beta;
 
-            canPrune = depth <= 3 && Evaluate() + depth * 151 <= alpha;
+            canPrune = depth <= 6 && Evaluate() + depth * 165 <= alpha;
 
             if (allowNullMove && depth >= 2)
             {
@@ -156,22 +156,7 @@ public class MyBot : IChessBot
                 continue;
 
             board.MakeMove(move);
-            /*if (moveCount++ == 0 || isQuiescence)
-                LambdaSearch(beta, allowNullMove);
-            else
-            {
-                if (moveCount >= 5 && depth >= 2)
-                    LambdaSearch(alpha + 1, allowNullMove, 3);
-                else
-                    eval = alpha + 1;
 
-                if (eval > alpha)
-                {
-                    LambdaSearch(alpha + 1, allowNullMove);
-                    if (eval > alpha)
-                        LambdaSearch(beta, allowNullMove);
-                }
-            }*/
 
             if (moveCount++ == 0 || isQuiescence)
                 LambdaSearch(beta, allowNullMove);
@@ -243,7 +228,7 @@ public class MyBot : IChessBot
             }
         }
 
-        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? 95 : 0);
+        return (middleGame * gamePhase + endGame * (24 - gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1) + gamePhase / 2 - (board.IsInCheck() ? 139 : 0);
 
     }
 
