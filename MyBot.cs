@@ -120,6 +120,9 @@ public class MyBot : IChessBot
         else if (!isCheck && beta - alpha == 1)
         {
 
+            if (depth < 5 && Evaluate() - depth * 151 > beta)
+                return beta;
+
             canPrune = depth <= 3 && Evaluate() + depth * 151 <= alpha;
 
             if (allowNullMove && depth >= 2)
