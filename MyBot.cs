@@ -22,7 +22,7 @@ public class MyBot : IChessBot
                                    94, 281, 297, 512, 936, 0 };
     readonly int[] piecePhaseValue = { 0, 1, 1, 2, 4, 0 };
 
-    Move[] killerMoves = new Move[99];
+    readonly Move[] killerMoves = new Move[99];
 
     int[,] historyHeuristicTable;
 
@@ -57,9 +57,7 @@ public class MyBot : IChessBot
             nodes = 0;
 #endif
             int eval = Search(alpha, beta, d, 0, true);
-            if (timer.MillisecondsElapsedThisTurn > maxTime)
-                break;
-
+            
 #if DEBUG
             Console.WriteLine("info Depth : " + d + "  ||  Eval : " + eval + "  ||  Nodes : " + nodes + " || Best Move : " + rootMove.StartSquare.Name + rootMove.TargetSquare.Name);
 #endif
@@ -74,6 +72,9 @@ public class MyBot : IChessBot
                 beta = eval + 27;
                 d++;
             }
+
+            if (timer.MillisecondsElapsedThisTurn > maxTime)
+                break;
 
         }
         return rootMove;
@@ -155,7 +156,7 @@ public class MyBot : IChessBot
                 continue;
 
             board.MakeMove(move);
-            if (moveCount++ == 0 || isQuiescence)
+            /*if (moveCount++ == 0 || isQuiescence)
                 LambdaSearch(beta, allowNullMove);
             else
             {
@@ -170,7 +171,13 @@ public class MyBot : IChessBot
                     if (eval > alpha)
                         LambdaSearch(beta, allowNullMove);
                 }
-            }
+            }*/
+
+            if (moveCount++ == 0 || isQuiescence)
+                LambdaSearch(beta, allowNullMove);
+            else
+                if (  (moveCount >= 5 && depth >= 2 ? LambdaSearch(alpha + 1, allowNullMove, 3)  : alpha + 1) > alpha && LambdaSearch(alpha + 1, allowNullMove) > alpha)
+                    LambdaSearch(beta, allowNullMove);
 
             board.UndoMove(move);
 
